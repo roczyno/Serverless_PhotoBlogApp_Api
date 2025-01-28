@@ -1,0 +1,233 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  PhotoBlogApp
+
+  Sample SAM Template for PhotoBlogApp
+
+Globals:
+  Function:
+    Timeout: 20
+    Runtime: java17
+    Architectures:
+      - x86_64
+    MemorySize: 512
+    Environment:
+      Variables:
+        PB_COGNITO_POOL_CLIENT_ID: !Ref PhotoBlogAppUserPoolClient
+        PB_COGNITO_POOL_SECRET_ID: !GetAtt PhotoBlogAppUserPoolClient.ClientSecret
+        PB_COGNITO_USER_POOL_ID: !Ref PhotoBlogAppUserPool
+        PB_LOGIN_TOPIC: !Ref LoginNotificationTopic
+
+
+Resources:
+
+  # Cognito Resources
+  PhotoBlogAppUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: PhotoBlogUserPool
+      AccountRecoverySetting:
+        RecoveryMechanisms:
+          - Name: verified_email
+            Priority: 1
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: false
+        InviteMessageTemplate:
+          EmailMessage: "Hello {username}, your verification code is {####}. Please use this code to verify your email and complete your registration."
+          EmailSubject: "Verify your email for PhotoBlogApp"
+      EmailConfiguration:
+        EmailSendingAccount: COGNITO_DEFAULT
+      AutoVerifiedAttributes:
+        - email
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: true
+          RequireUppercase: true
+      Schema:
+        - Name: email
+          AttributeDataType: String
+          Mutable: true
+          Required: true
+        - Name: name
+          AttributeDataType: String
+          Mutable: true
+          Required: true
+        - Name: userId
+          AttributeDataType: String
+          Mutable: true
+          Required: false
+      UsernameAttributes:
+        - email
+      UsernameConfiguration:
+        CaseSensitive: false
+
+
+  PhotoBlogAppUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref PhotoBlogAppUserPool
+      ClientName: PhotoBlogAppClient
+      GenerateSecret: true
+      ExplicitAuthFlows:
+        - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_ADMIN_USER_PASSWORD_AUTH
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+      PreventUserExistenceErrors: ENABLED
+      AllowedOAuthFlows:
+        - code
+      AllowedOAuthScopes:
+        - email
+        - openid
+        - profile
+      AllowedOAuthFlowsUserPoolClient: true
+      CallbackURLs:
+        - http://localhost:5173
+      SupportedIdentityProviders:
+        - COGNITO
+
+  PhotoBlogAppUserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain: !Sub "photoblogapp-${AWS::AccountId}"
+      UserPoolId: !Ref PhotoBlogAppUserPool
+
+
+
+
+  # API Gateway
+  MyApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      Auth:
+        DefaultAuthorizer: CognitoAuthorizer
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn: !GetAtt PhotoBlogAppUserPool.Arn
+        AddDefaultAuthorizerToCorsPreflight: false
+      Cors:
+        AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Requested-With'"
+        AllowOrigin: "'*'"
+        MaxAge: "'3600'"
+
+
+  LoginUserHandlerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: PhotoBlogAppApi
+      Handler: com.roczyno.aws.photoblogapp.auth.LoginUserHandler::handleRequest
+      Policies:
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - sns:Publish
+              Resource: !Ref LoginNotificationTopic
+            - Effect: Allow
+              Action:
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource:
+                - !Sub "arn:aws:logs:eu-west-1:${AWS::AccountId}:log-group:/aws/lambda/*"
+      Events:
+        LoginUser:
+          Type: Api
+          Properties:
+            Path: /login
+            Method: post
+            RestApiId: !Ref MyApi
+            Auth:
+              Authorizer: NONE
+
+  RegisterUserHandlerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: PhotoBlogAppApi
+      Handler: com.roczyno.aws.photoblogapp.auth.RegisterUserHandler::handleRequest
+      Policies:
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - cognito-idp:SignUp
+                - cognito-idp:ConfirmSignUp
+                - cognito-idp:AdminCreateUser
+              Resource: !GetAtt PhotoBlogAppUserPool.Arn
+            - Effect: Allow
+              Action:
+                - sns:Subscribe
+              Resource: !Ref LoginNotificationTopic
+            - Effect: Allow
+              Action:
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource:
+                - !Sub "arn:aws:logs:eu-west-1:${AWS::AccountId}:log-group:/aws/lambda/*"
+      Events:
+        LoginUser:
+          Type: Api
+          Properties:
+            Path: /register
+            Method: post
+            RestApiId: !Ref MyApi
+            Auth:
+              Authorizer: NONE
+
+
+  ConfirmUserHandlerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: PhotoBlogAppApi
+      Handler: com.roczyno.aws.photoblogapp.auth.ConfirmUserHandler::handleRequest
+      Events:
+        LoginUser:
+          Type: Api
+          Properties:
+            Path: /confirm
+            Method: post
+            RestApiId: !Ref MyApi
+            Auth:
+              Authorizer: NONE
+
+
+
+
+  LoginNotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: LoginNotificationTopic
+      DisplayName: LoginNotificationTopic
+
+
+Outputs:
+  UserPoolId:
+    Description: ID of the Cognito User Pool
+    Value: !Ref PhotoBlogAppUserPool
+
+  UserPoolClientId:
+    Description: ID of the Cognito User Pool Client
+    Value: !Ref PhotoBlogAppUserPoolClient
+
+  UserPoolClientSecret:
+    Description: Secret of the Cognito User Pool Client
+    Value: !GetAtt PhotoBlogAppUserPoolClient.ClientSecret
+
+  ApiEndpoint:
+    Description: "API Gateway endpoint URL for Prod stage"
+    Value: !Sub "https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"
+
+  CognitoLoginUrl:
+    Description: "Cognito hosted UI login URL"
+    Value: !Sub "https://${PhotoBlogAppUserPoolDomain}.auth.${AWS::Region}.amazoncognito.com/login?client_id=${PhotoBlogAppUserPoolClient}&response_type=code&scope=email+openid+profile&redirect_uri=http://localhost:5173"
+
+  CognitoDomain:
+    Description: "Cognito User Pool Domain"
+    Value: !Sub "https://${PhotoBlogAppUserPoolDomain}.auth.${AWS::Region}.amazoncognito.com"

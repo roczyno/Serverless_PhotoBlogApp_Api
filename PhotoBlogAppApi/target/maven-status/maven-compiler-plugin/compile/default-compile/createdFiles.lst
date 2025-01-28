@@ -1,0 +1,9 @@
+com\roczyno\aws\photoblogapp\service\auth\RegisterUserHandler.class
+com\roczyno\aws\photoblogapp\service\auth\ConfirmUserHandler.class
+com\roczyno\aws\photoblogapp\service\auth\LoginUserHandler.class
+PhotoBlogAppApi\GatewayResponse.class
+com\roczyno\aws\photoblogapp\config\AwsConfig.class
+com\roczyno\aws\photoblogapp\exceptions\ErrorResponse.class
+com\roczyno\aws\photoblogapp\service\CognitoUserService$1.class
+com\roczyno\aws\photoblogapp\service\CognitoUserService.class
+com\roczyno\aws\photoblogapp\service\NotificationService.class
