@@ -20,6 +20,7 @@ Globals:
         PB_LOGIN_TOPIC: !Ref LoginNotificationTopic
 
 
+
 Resources:
 
   # Cognito Resources
@@ -205,6 +206,85 @@ Resources:
     Properties:
       TopicName: LoginNotificationTopic
       DisplayName: LoginNotificationTopic
+
+  ProcessingQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      VisibilityTimeout: 300
+      MessageRetentionPeriod: 1209600
+      SqsManagedSseEnabled: true
+
+
+  ImageUploadFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: PhotoBlogAppApi
+      Handler: com.roczyno.aws.photoblogapp.image.ImageUploadHandler::handleRequest
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref StagingBucket
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt ProcessingQueue.QueueName
+        - Statement:
+            - Effect: Allow
+              Action:
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource:
+                - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*"
+      Environment:
+        Variables:
+          STAGING_BUCKET: !Ref StagingBucket
+          PROCESSING_QUEUE: !Ref ProcessingQueue
+      Events:
+        UploadApi:
+          Type: Api
+          Properties:
+            Path: /image/upload
+            Method: post
+            RestApiId: !Ref MyApi
+            Auth:
+              Authorizer: CognitoAuthorizer
+
+  StagingBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: photoblogapp-staging-bucket
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders: [ '*' ]
+            AllowedMethods: [ GET, PUT, POST, DELETE ]
+            AllowedOrigins: [ '*' ]
+            MaxAge: 3000
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: ObjectWriter
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldFiles
+            Status: Enabled
+            ExpirationInDays: 7
+
+
+  StagingBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref StagingBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: PublicReadGetObject
+            Effect: Allow
+            Principal: "*"
+            Action: "s3:GetObject"
+            Resource: !Sub "arn:aws:s3:::${StagingBucket}/*"
+
 
 
 Outputs:

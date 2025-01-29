@@ -21,3 +21,11 @@ UPhotoBlogAppApi/src/main/java/com/roczyno/aws/photoblogapp/auth/LoginUserHandle
 WPhotoBlogAppApi/src/main/java/com/roczyno/aws/photoblogapp/auth/ConfirmUserHandler.java,1\4\14c28a6b80035df93c0b8d841be9e82613839463
 ˆ
 XPhotoBlogAppApi/src/main/java/com/roczyno/aws/photoblogapp/auth/RegisterUserHandler.java,a\b\abba87261ee5c4673a96b1d9bbdb04dfee16d583
+„
+TPhotoBlogAppApi/src/main/java/com/roczyno/aws/photoblogapp/service/ImageService.java,d\d\dde6ad06e6df4d007e6ec9514f88c3801aab7e54
+
+OPhotoBlogAppApi/src/main/java/com/roczyno/aws/photoblogapp/dto/UserDetails.java,2\2\22a1ee36fb284cdf5a5cd2457aea205ba3ddae05
+ˆ
+XPhotoBlogAppApi/src/main/java/com/roczyno/aws/photoblogapp/image/ImageUploadHandler.java,9\b\9bc2608671e65f1ca4f34cfe4d818568e3e68f79
+
+OPhotoBlogAppApi/src/main/java/com/roczyno/aws/photoblogapp/util/TokenUtils.java,3\6\365c62b7788347db84bb20d4c50b80fc71afbff6
