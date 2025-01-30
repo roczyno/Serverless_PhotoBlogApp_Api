@@ -302,6 +302,44 @@ Resources:
             BatchSize: 1
     Metadata:
       SamResourceId: ImageProcessorFunction
+  ShareImageFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ShareImageFunction
+      Handler: com.roczyno.aws.photoblogapp.image.ShareImageHandler::handleRequest
+      Policies:
+      - DynamoDBReadPolicy:
+          TableName:
+            Ref: ImagesTable
+      - S3ReadPolicy:
+          BucketName:
+            Ref: PrimaryBucket
+      - Statement:
+        - Effect: Allow
+          Action:
+          - logs:CreateLogGroup
+          - logs:CreateLogStream
+          - logs:PutLogEvents
+          Resource:
+          - Fn::Sub: arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*
+      Environment:
+        Variables:
+          PRIMARY_BUCKET:
+            Ref: PrimaryBucket
+          IMAGES_TABLE:
+            Ref: ImagesTable
+      Events:
+        ShareImage:
+          Type: Api
+          Properties:
+            Path: /image/{imageId}/share
+            Method: get
+            RestApiId:
+              Ref: MyApi
+            Auth:
+              Authorizer: CognitoAuthorizer
+    Metadata:
+      SamResourceId: ShareImageFunction
   StagingBucket:
     Type: AWS::S3::Bucket
     Properties:

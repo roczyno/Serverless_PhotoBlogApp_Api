@@ -280,6 +280,40 @@ Resources:
             Queue: !GetAtt ProcessingQueue.Arn
             BatchSize: 1
 
+
+
+  ShareImageFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: PhotoBlogAppApi
+      Handler: com.roczyno.aws.photoblogapp.image.ShareImageHandler::handleRequest
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref ImagesTable
+        - S3ReadPolicy:
+            BucketName: !Ref PrimaryBucket
+        - Statement:
+            - Effect: Allow
+              Action:
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource:
+                - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*"
+      Environment:
+        Variables:
+          PRIMARY_BUCKET: !Ref PrimaryBucket
+          IMAGES_TABLE: !Ref ImagesTable
+      Events:
+        ShareImage:
+          Type: Api
+          Properties:
+            Path: /image/{imageId}/share
+            Method: get
+            RestApiId: !Ref MyApi
+            Auth:
+              Authorizer: CognitoAuthorizer
+
   StagingBucket:
     Type: AWS::S3::Bucket
     Properties:
