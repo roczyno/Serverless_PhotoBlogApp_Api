@@ -5,9 +5,9 @@ codeuri = "/mnt/c/Users/JacobSabbathAdiaba/OneDrive - AmaliTech gGmbH/Desktop/Aw
 runtime = "java17"
 architecture = "x86_64"
 handler = "com.roczyno.aws.photoblogapp.auth.LoginUserHandler::handleRequest"
-source_hash = "08d2bd8300c4fb086ede75c9c7329ef0f549103764e9b57734e96d06db80ec09"
+source_hash = "232df2b49debe260088a9a172636e496bdb41f85ab8a793b1f3065c46f8c6597"
 manifest_hash = ""
 packagetype = "Zip"
-functions = ["LoginUserHandlerFunction", "RegisterUserHandlerFunction", "ConfirmUserHandlerFunction", "ImageUploadFunction"]
+functions = ["LoginUserHandlerFunction", "RegisterUserHandlerFunction", "ConfirmUserHandlerFunction", "ImageUploadFunction", "ImageProcessorFunction"]
 
 [layer_build_definitions]

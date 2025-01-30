@@ -247,6 +247,39 @@ Resources:
             Auth:
               Authorizer: CognitoAuthorizer
 
+  ImageProcessorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: PhotoBlogAppApi
+      Handler: com.roczyno.aws.photoblogapp.image.ImageProcessorHandler::handleRequest
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref StagingBucket
+        - S3CrudPolicy:
+            BucketName: !Ref PrimaryBucket
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ImagesTable
+        - SQSPollerPolicy:
+            QueueName: !GetAtt ProcessingQueue.QueueName
+        - Statement:
+            - Effect: Allow
+              Action:
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource:
+                - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*"
+      Environment:
+        Variables:
+          PB_PRIMARY_BUCKET: !Ref PrimaryBucket
+          PB_IMAGES_TABLE: !Ref ImagesTable
+      Events:
+        SQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt ProcessingQueue.Arn
+            BatchSize: 1
+
   StagingBucket:
     Type: AWS::S3::Bucket
     Properties:
@@ -286,6 +319,64 @@ Resources:
             Resource: !Sub "arn:aws:s3:::${StagingBucket}/*"
 
 
+  PrimaryBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: photoblogapp-primary-bucket
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders: [ '*' ]
+            AllowedMethods: [ GET ]
+            AllowedOrigins: [ '*' ]
+            MaxAge: 3000
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: ObjectWriter
+
+  PrimaryBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref PrimaryBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: PublicReadGetObject
+            Effect: Allow
+            Principal: "*"
+            Action: "s3:GetObject"
+            Resource: !Sub "arn:aws:s3:::${PrimaryBucket}/*"
+
+
+  ImagesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: photoblogapp-images
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: imageId
+          AttributeType: S
+        - AttributeName: userId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: imageId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: UserImagesIndex
+          KeySchema:
+            - AttributeName: userId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
+
+
+
+
 
 Outputs:
   UserPoolId:
@@ -311,3 +402,12 @@ Outputs:
   CognitoDomain:
     Description: "Cognito User Pool Domain"
     Value: !Sub "https://${PhotoBlogAppUserPoolDomain}.auth.${AWS::Region}.amazoncognito.com"
+
+
+  PrimaryBucketName:
+    Description: Name of the primary S3 bucket
+    Value: !Ref PrimaryBucket
+
+  ImagesTableName:
+    Description: Name of the DynamoDB images table
+    Value: !Ref ImagesTable

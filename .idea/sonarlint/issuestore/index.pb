@@ -29,3 +29,5 @@ OPhotoBlogAppApi/src/main/java/com/roczyno/aws/photoblogapp/dto/UserDetails.java
 XPhotoBlogAppApi/src/main/java/com/roczyno/aws/photoblogapp/image/ImageUploadHandler.java,9\b\9bc2608671e65f1ca4f34cfe4d818568e3e68f79
 
 OPhotoBlogAppApi/src/main/java/com/roczyno/aws/photoblogapp/util/TokenUtils.java,3\6\365c62b7788347db84bb20d4c50b80fc71afbff6
+‹
+[PhotoBlogAppApi/src/main/java/com/roczyno/aws/photoblogapp/image/ImageProcessorHandler.java,9\7\97c5fe648c676922a5f1977acb1be5645c66a6af
