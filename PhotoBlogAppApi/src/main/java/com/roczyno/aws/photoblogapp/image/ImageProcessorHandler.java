@@ -11,8 +11,11 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.sns.SnsClient;
+import software.amazon.awssdk.services.sns.model.PublishRequest;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -30,8 +33,12 @@ public class ImageProcessorHandler implements RequestHandler<SQSEvent, Void> {
 	private final ObjectMapper objectMapper;
 	private final String primaryBucket;
 	private final String imagesTable;
+	private final SnsClient snsClient;
+	private final String imageProcessingFailedSnsTopic;
 
 	public ImageProcessorHandler() {
+		this.imageProcessingFailedSnsTopic = System.getenv("PB_FAILURE_NOTIFICATION_TOPIC");
+		this.snsClient = AwsConfig.snsClient();
 		this.s3Client = AwsConfig.s3Client();
 		this.dynamoDbClient = AwsConfig.dynamoDbClient();
 		this.objectMapper = AwsConfig.objectMapper();
@@ -119,8 +126,28 @@ public class ImageProcessorHandler implements RequestHandler<SQSEvent, Void> {
 
 				logger.log(String.format("Successfully processed image %s for user %s", imageId, userId));
 
+				try {
+					DeleteObjectRequest deleteRequest = DeleteObjectRequest.builder()
+							.bucket(stagingBucket)
+							.key(stagingKey)
+							.build();
+
+					logger.log(String.format("Attempting to delete object from bucket %s with key %s",
+							stagingBucket, stagingKey));
+
+					s3Client.deleteObject(deleteRequest);
+
+					logger.log(String.format("Successfully deleted object from bucket %s with key %s",
+							stagingBucket, stagingKey));
+				} catch (Exception e) {
+					logger.log(String.format("Failed to delete object from bucket %s with key %s. Error: %s",
+							stagingBucket, stagingKey, e.getMessage()));
+				}
+
+
 			} catch (Exception e) {
 				logger.log(String.format("Error processing message: %s. Error: %s", message.getBody(), e.getMessage()));
+				sendFailureNotification(message.getBody(), e.getMessage());
 				throw new RuntimeException("Failed to process image", e);
 			}
 		}
@@ -158,5 +185,26 @@ public class ImageProcessorHandler implements RequestHandler<SQSEvent, Void> {
 
 		g2d.dispose();
 		return watermarked;
+	}
+
+	private void sendFailureNotification(String originalMessage, String errorMessage) {
+		try {
+			// Create JSON-like message using Jackson ObjectMapper
+			String notificationMessage = objectMapper.writeValueAsString(Map.of(
+					"originalMessage", originalMessage,
+					"errorMessage", errorMessage,
+					"timestamp", LocalDateTime.now().toString()
+			));
+
+			PublishRequest publishRequest = PublishRequest.builder()
+					.topicArn(imageProcessingFailedSnsTopic)
+					.message(notificationMessage)
+					.messageGroupId("image-processing-failures")
+					.build();
+
+			snsClient.publish(publishRequest);
+		} catch (Exception e) {
+			System.err.println("Failed to send SNS notification: " + e.getMessage());
+		}
 	}
 }

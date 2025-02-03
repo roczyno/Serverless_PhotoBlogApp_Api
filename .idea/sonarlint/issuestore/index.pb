@@ -33,3 +33,9 @@ OPhotoBlogAppApi/src/main/java/com/roczyno/aws/photoblogapp/util/TokenUtils.java
 [PhotoBlogAppApi/src/main/java/com/roczyno/aws/photoblogapp/image/ImageProcessorHandler.java,9\7\97c5fe648c676922a5f1977acb1be5645c66a6af
 ‡
 WPhotoBlogAppApi/src/main/java/com/roczyno/aws/photoblogapp/image/ShareImageHandler.java,3\1\31288128443d21a8921cdf5d35a9f313d25f7c1d
+‰
+YPhotoBlogAppApi/src/main/java/com/roczyno/aws/photoblogapp/image/GetAllImagesHandler.java,1\7\17d75b76212ab5fdaea60c5a467dc6e281ee919d
+Š
+ZPhotoBlogAppApi/src/main/java/com/roczyno/aws/photoblogapp/image/GetUserImagesHandler.java,1\8\18e3d4a3489821d9d74b4def9c3e90e54790494b
+‹
+[PhotoBlogAppApi/src/main/java/com/roczyno/aws/photoblogapp/image/ImageRecyclingHandler.java,0\c\0cd38f46a4b2178bbfdc3f7583b7be7a3148c624

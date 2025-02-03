@@ -211,12 +211,24 @@ Resources:
     Properties:
       TopicName: LoginNotificationTopic
       DisplayName: LoginNotificationTopic
+  ImageProcessingFailureNotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: ImageProcessingFailures
   ProcessingQueue:
     Type: AWS::SQS::Queue
     Properties:
       VisibilityTimeout: 300
       MessageRetentionPeriod: 1209600
       SqsManagedSseEnabled: true
+      RedrivePolicy:
+        deadLetterTargetArn:
+          Fn::GetAtt:
+          - ImageProcessingDeadLetterQueue
+          - Arn
+        maxReceiveCount: 3
+  ImageProcessingDeadLetterQueue:
+    Type: AWS::SQS::Queue
   ImageUploadFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -272,6 +284,11 @@ Resources:
       - DynamoDBCrudPolicy:
           TableName:
             Ref: ImagesTable
+      - SNSPublishMessagePolicy:
+          TopicName:
+            Fn::GetAtt:
+            - ImageProcessingFailureNotificationTopic
+            - TopicName
       - SQSPollerPolicy:
           QueueName:
             Fn::GetAtt:
@@ -291,6 +308,8 @@ Resources:
             Ref: PrimaryBucket
           PB_IMAGES_TABLE:
             Ref: ImagesTable
+          PB_FAILURE_NOTIFICATION_TOPIC:
+            Ref: ImageProcessingFailureNotificationTopic
       Events:
         SQSEvent:
           Type: SQS
@@ -302,6 +321,72 @@ Resources:
             BatchSize: 1
     Metadata:
       SamResourceId: ImageProcessorFunction
+  GetAllImagesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: GetAllImagesFunction
+      Handler: com.roczyno.aws.photoblogapp.image.GetAllImagesHandler::handleRequest
+      Policies:
+      - DynamoDBReadPolicy:
+          TableName:
+            Ref: ImagesTable
+      - Statement:
+        - Effect: Allow
+          Action:
+          - logs:CreateLogGroup
+          - logs:CreateLogStream
+          - logs:PutLogEvents
+          Resource:
+          - Fn::Sub: arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*
+      Environment:
+        Variables:
+          PB_IMAGES_TABLE:
+            Ref: ImagesTable
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /images
+            Method: get
+            RestApiId:
+              Ref: MyApi
+            Auth:
+              Authorizer: CognitoAuthorizer
+    Metadata:
+      SamResourceId: GetAllImagesFunction
+  GetUserImagesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: GetUserImagesFunction
+      Handler: com.roczyno.aws.photoblogapp.image.GetUserImagesHandler::handleRequest
+      Policies:
+      - DynamoDBReadPolicy:
+          TableName:
+            Ref: ImagesTable
+      - Statement:
+        - Effect: Allow
+          Action:
+          - logs:CreateLogGroup
+          - logs:CreateLogStream
+          - logs:PutLogEvents
+          Resource:
+          - Fn::Sub: arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*
+      Environment:
+        Variables:
+          PB_IMAGES_TABLE:
+            Ref: ImagesTable
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /images/user
+            Method: get
+            RestApiId:
+              Ref: MyApi
+            Auth:
+              Authorizer: CognitoAuthorizer
+    Metadata:
+      SamResourceId: GetUserImagesFunction
   ShareImageFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -340,6 +425,56 @@ Resources:
               Authorizer: CognitoAuthorizer
     Metadata:
       SamResourceId: ShareImageFunction
+  RecycleBinFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: RecycleBinFunction
+      Handler: com.roczyno.aws.photoblogapp.image.ImageRecyclingHandler::handleRequest
+      Policies:
+      - S3CrudPolicy:
+          BucketName:
+            Ref: PrimaryBucket
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: ImagesTable
+      - Statement:
+        - Effect: Allow
+          Action:
+          - logs:CreateLogGroup
+          - logs:CreateLogStream
+          - logs:PutLogEvents
+          Resource:
+          - Fn::Sub: arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*
+      Environment:
+        Variables:
+          PB_PRIMARY_BUCKET:
+            Ref: PrimaryBucket
+          PB_IMAGES_TABLE:
+            Ref: ImagesTable
+      Events:
+        MoveToRecycleBin:
+          Type: Api
+          Properties:
+            Path: /images/{imageId}/recycle
+            Method: delete
+            RestApiId:
+              Ref: MyApi
+        RestoreFromRecycleBin:
+          Type: Api
+          Properties:
+            Path: /images/{imageId}/restore
+            Method: put
+            RestApiId:
+              Ref: MyApi
+        PermanentDelete:
+          Type: Api
+          Properties:
+            Path: /images/{imageId}/permanent-delete
+            Method: delete
+            RestApiId:
+              Ref: MyApi
+    Metadata:
+      SamResourceId: RecycleBinFunction
   StagingBucket:
     Type: AWS::S3::Bucket
     Properties:
@@ -438,6 +573,9 @@ Resources:
           KeyType: HASH
         Projection:
           ProjectionType: ALL
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
 Outputs:
   UserPoolId:
     Description: ID of the Cognito User Pool

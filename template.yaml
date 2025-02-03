@@ -207,12 +207,24 @@ Resources:
       TopicName: LoginNotificationTopic
       DisplayName: LoginNotificationTopic
 
+
+  ImageProcessingFailureNotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: ImageProcessingFailures
+
   ProcessingQueue:
     Type: AWS::SQS::Queue
     Properties:
       VisibilityTimeout: 300
       MessageRetentionPeriod: 1209600
       SqsManagedSseEnabled: true
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt ImageProcessingDeadLetterQueue.Arn
+        maxReceiveCount: 3
+
+  ImageProcessingDeadLetterQueue:
+    Type: AWS::SQS::Queue
 
 
   ImageUploadFunction:
@@ -259,6 +271,8 @@ Resources:
             BucketName: !Ref PrimaryBucket
         - DynamoDBCrudPolicy:
             TableName: !Ref ImagesTable
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt ImageProcessingFailureNotificationTopic.TopicName
         - SQSPollerPolicy:
             QueueName: !GetAtt ProcessingQueue.QueueName
         - Statement:
@@ -273,12 +287,72 @@ Resources:
         Variables:
           PB_PRIMARY_BUCKET: !Ref PrimaryBucket
           PB_IMAGES_TABLE: !Ref ImagesTable
+          PB_FAILURE_NOTIFICATION_TOPIC: !Ref ImageProcessingFailureNotificationTopic
+
       Events:
         SQSEvent:
           Type: SQS
           Properties:
             Queue: !GetAtt ProcessingQueue.Arn
             BatchSize: 1
+
+  GetAllImagesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: PhotoBlogAppApi
+      Handler: com.roczyno.aws.photoblogapp.image.GetAllImagesHandler::handleRequest
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref ImagesTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource:
+                - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*"
+      Environment:
+        Variables:
+          PB_IMAGES_TABLE: !Ref ImagesTable
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /images
+            Method: get
+            RestApiId: !Ref MyApi
+            Auth:
+              Authorizer: CognitoAuthorizer
+
+  GetUserImagesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: PhotoBlogAppApi
+      Handler: com.roczyno.aws.photoblogapp.image.GetUserImagesHandler::handleRequest
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref ImagesTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource:
+                - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*"
+      Environment:
+        Variables:
+          PB_IMAGES_TABLE: !Ref ImagesTable
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /images/user
+            Method: get
+            RestApiId: !Ref MyApi
+            Auth:
+              Authorizer: CognitoAuthorizer
 
 
 
@@ -313,6 +387,50 @@ Resources:
             RestApiId: !Ref MyApi
             Auth:
               Authorizer: CognitoAuthorizer
+
+  RecycleBinFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: PhotoBlogAppApi
+      Handler: com.roczyno.aws.photoblogapp.image.ImageRecyclingHandler::handleRequest
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref PrimaryBucket
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ImagesTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource:
+                - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*"
+      Environment:
+        Variables:
+          PB_PRIMARY_BUCKET: !Ref PrimaryBucket
+          PB_IMAGES_TABLE: !Ref ImagesTable
+      Events:
+        MoveToRecycleBin:
+          Type: Api
+          Properties:
+            Path: /images/{imageId}/recycle
+            Method: delete
+            RestApiId: !Ref MyApi
+
+        RestoreFromRecycleBin:
+          Type: Api
+          Properties:
+            Path: /images/{imageId}/restore
+            Method: put
+            RestApiId: !Ref MyApi
+
+        PermanentDelete:
+          Type: Api
+          Properties:
+            Path: /images/{imageId}/permanent-delete
+            Method: delete
+            RestApiId: !Ref MyApi
 
   StagingBucket:
     Type: AWS::S3::Bucket
@@ -406,6 +524,10 @@ Resources:
               KeyType: HASH
           Projection:
             ProjectionType: ALL
+      # Optional: Add a TTL for permanently deleted items
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
 
 
 
