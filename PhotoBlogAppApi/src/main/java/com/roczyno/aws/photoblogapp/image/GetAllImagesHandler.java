@@ -17,7 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public  class GetAllImagesHandler implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
+public class GetAllImagesHandler implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
 	private final DynamoDbClient dynamoDbClient;
 	private final ObjectMapper objectMapper;
 	private final String imagesTable;
@@ -40,6 +40,10 @@ public  class GetAllImagesHandler implements RequestHandler<APIGatewayProxyReque
 		try {
 			ScanRequest scanRequest = ScanRequest.builder()
 					.tableName(imagesTable)
+					.filterExpression("attribute_not_exists(isDeleted) OR isDeleted = :false")
+					.expressionAttributeValues(Map.of(
+							":false", AttributeValue.builder().bool(false).build()
+					))
 					.build();
 
 			ScanResponse scanResponse = dynamoDbClient.scan(scanRequest);

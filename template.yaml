@@ -432,6 +432,33 @@ Resources:
             Method: delete
             RestApiId: !Ref MyApi
 
+  GetAllRecycledImagesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: PhotoBlogAppApi
+      Handler: com.roczyno.aws.photoblogapp.image.GetAllRecycledImagesHandler::handleRequest
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ImagesTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource:
+                - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*"
+      Environment:
+        Variables:
+          PB_IMAGES_TABLE: !Ref ImagesTable
+      Events:
+        GetRecycledImages:
+          Type: Api
+          Properties:
+            Path: /images/recycled
+            Method: get
+            RestApiId: !Ref MyApi
+
   StagingBucket:
     Type: AWS::S3::Bucket
     Properties:

@@ -20,7 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public  class GetUserImagesHandler implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
+public class GetUserImagesHandler implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
 	private final DynamoDbClient dynamoDbClient;
 	private final ObjectMapper objectMapper;
 	private final String imagesTable;
@@ -41,7 +41,6 @@ public  class GetUserImagesHandler implements RequestHandler<APIGatewayProxyRequ
 		APIGatewayProxyResponseEvent response = new APIGatewayProxyResponseEvent();
 
 		try {
-			// Get userId from path parameters
 			if (input.getHeaders() == null || !input.getHeaders().containsKey("Authorization")) {
 				logger.log("Authorization header missing");
 				return createErrorResponse(response, 401, "Authorization header is missing");
@@ -58,20 +57,16 @@ public  class GetUserImagesHandler implements RequestHandler<APIGatewayProxyRequ
 				return createErrorResponse(response, 401, "Invalid authentication token");
 			}
 
-			// Get imageId from path parameter
-			Map<String, String> pathParameters = input.getPathParameters();
-			if (pathParameters == null || !pathParameters.containsKey("imageId")) {
-				return createErrorResponse(response, 400, "Image ID is required");
-			}
-
 			String userId = userDetails.get("userId");
 
-			// Query DynamoDB for user's images
+			// Query DynamoDB for user's images, excluding recycled images
 			QueryRequest queryRequest = QueryRequest.builder()
 					.tableName(imagesTable)
 					.keyConditionExpression("userId = :userId")
+					.filterExpression("attribute_not_exists(isDeleted) OR isDeleted = :false")
 					.expressionAttributeValues(Map.of(
-							":userId", AttributeValue.builder().s(userId).build()
+							":userId", AttributeValue.builder().s(userId).build(),
+							":false", AttributeValue.builder().bool(false).build()
 					))
 					.build();
 
