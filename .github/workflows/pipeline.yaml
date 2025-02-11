@@ -98,6 +98,7 @@ jobs:
             --region ${TESTING_REGION} \
             --resolve-s3 \
             --no-fail-on-empty-changeset \
+            --no-confirm-changeset \
             --role-arn ${TESTING_CLOUDFORMATION_EXECUTION_ROLE}
 
   build-and-package:
@@ -191,6 +192,7 @@ jobs:
             --region ${TESTING_REGION} \
             --resolve-s3 \
             --no-fail-on-empty-changeset \
+            --no-confirm-changeset \
             --role-arn ${TESTING_CLOUDFORMATION_EXECUTION_ROLE}
 
   integration-test:
@@ -237,4 +239,5 @@ jobs:
             --region ${PROD_REGION} \
             --resolve-s3 \
             --no-fail-on-empty-changeset \
+            --no-confirm-changeset \
             --role-arn ${PROD_CLOUDFORMATION_EXECUTION_ROLE}
