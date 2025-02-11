@@ -16,7 +16,6 @@ env:
   TESTING_STACK_NAME: PhotoBlogApp
   TESTING_PIPELINE_EXECUTION_ROLE: arn:aws:iam::343218181928:role/aws-sam-cli-managed-primary-p-PipelineExecutionRole-2iuWvYhE0GZO
   TESTING_CLOUDFORMATION_EXECUTION_ROLE: arn:aws:iam::343218181928:role/aws-sam-cli-managed-prima-CloudFormationExecutionRo-KftSZw1GuiuV
-  TESTING_ARTIFACTS_BUCKET: aws-sam-cli-managed-primary-pipeli-artifactsbucket-cqklu9dlchrb
   # If there are functions with "Image" PackageType in your template,
   # uncomment the line below and add "--image-repository ${TESTING_IMAGE_REPOSITORY}" to
   # testing "sam package" and "sam deploy" commands.
@@ -25,7 +24,6 @@ env:
   PROD_STACK_NAME: PhotoBlogApp
   PROD_PIPELINE_EXECUTION_ROLE: arn:aws:iam::343218181928:role/aws-sam-cli-managed-primary-p-PipelineExecutionRole-2iuWvYhE0GZO
   PROD_CLOUDFORMATION_EXECUTION_ROLE: arn:aws:iam::343218181928:role/aws-sam-cli-managed-prima-CloudFormationExecutionRo-KftSZw1GuiuV
-  PROD_ARTIFACTS_BUCKET: aws-sam-cli-managed-primary-pipeli-artifactsbucket-cqklu9dlchrb
   # If there are functions with "Image" PackageType in your template,
   # uncomment the line below and add "--image-repository ${PROD_IMAGE_REPOSITORY}" to
   # prod "sam package" and "sam deploy" commands.
@@ -71,10 +69,6 @@ jobs:
             --no-prompts
 
   build-and-deploy-feature:
-    # this stage is triggered only for feature branches (feature*),
-    # which will build the stack and deploy to a stack named with branch name.
-    # https://github.com/actions/setup-python
-    # https://github.com/aws-actions/configure-aws-credentials#notice-node12-deprecation-warning
     if: startsWith(github.ref, 'refs/heads/feature')
     needs: [test]
     runs-on: ubuntu-latest
@@ -102,7 +96,7 @@ jobs:
           sam deploy --stack-name $(echo ${GITHUB_REF##*/} | tr -cd '[a-zA-Z0-9-]') \
             --capabilities CAPABILITY_IAM \
             --region ${TESTING_REGION} \
-            --s3-bucket ${TESTING_ARTIFACTS_BUCKET} \
+            --resolve-s3 \
             --no-fail-on-empty-changeset \
             --role-arn ${TESTING_CLOUDFORMATION_EXECUTION_ROLE}
 
@@ -133,7 +127,7 @@ jobs:
       - name: Upload artifacts to testing artifact buckets
         run: |
           sam package \
-            --s3-bucket ${TESTING_ARTIFACTS_BUCKET} \
+            --resolve-s3 \
             --region ${TESTING_REGION} \
             --output-template-file packaged-testing.yaml
 
@@ -156,7 +150,7 @@ jobs:
       - name: Upload artifacts to production artifact buckets
         run: |
           sam package \
-            --s3-bucket ${PROD_ARTIFACTS_BUCKET} \
+            --resolve-s3 \
             --region ${PROD_REGION} \
             --output-template-file packaged-prod.yaml
 
@@ -195,7 +189,7 @@ jobs:
             --template packaged-testing.yaml \
             --capabilities CAPABILITY_IAM \
             --region ${TESTING_REGION} \
-            --s3-bucket ${TESTING_ARTIFACTS_BUCKET} \
+            --resolve-s3 \
             --no-fail-on-empty-changeset \
             --role-arn ${TESTING_CLOUDFORMATION_EXECUTION_ROLE}
 
@@ -241,6 +235,6 @@ jobs:
             --template packaged-prod.yaml \
             --capabilities CAPABILITY_IAM \
             --region ${PROD_REGION} \
-            --s3-bucket ${PROD_ARTIFACTS_BUCKET} \
+            --resolve-s3 \
             --no-fail-on-empty-changeset \
             --role-arn ${PROD_CLOUDFORMATION_EXECUTION_ROLE}
