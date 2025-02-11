@@ -62,6 +62,7 @@ public class GetUserImagesHandler implements RequestHandler<APIGatewayProxyReque
 			// Query DynamoDB for user's images, excluding recycled images
 			QueryRequest queryRequest = QueryRequest.builder()
 					.tableName(imagesTable)
+					.indexName("UserImagesIndex")
 					.keyConditionExpression("userId = :userId")
 					.filterExpression("attribute_not_exists(isDeleted) OR isDeleted = :false")
 					.expressionAttributeValues(Map.of(

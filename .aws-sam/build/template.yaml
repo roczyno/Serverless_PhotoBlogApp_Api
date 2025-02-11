@@ -459,6 +459,8 @@ Resources:
             Method: delete
             RestApiId:
               Ref: MyApi
+            Auth:
+              Authorizer: CognitoAuthorizer
         RestoreFromRecycleBin:
           Type: Api
           Properties:
@@ -466,6 +468,8 @@ Resources:
             Method: put
             RestApiId:
               Ref: MyApi
+            Auth:
+              Authorizer: CognitoAuthorizer
         PermanentDelete:
           Type: Api
           Properties:
@@ -473,8 +477,43 @@ Resources:
             Method: delete
             RestApiId:
               Ref: MyApi
+            Auth:
+              Authorizer: CognitoAuthorizer
     Metadata:
       SamResourceId: RecycleBinFunction
+  GetAllRecycledImagesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: GetAllRecycledImagesFunction
+      Handler: com.roczyno.aws.photoblogapp.image.GetAllRecycledImagesHandler::handleRequest
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: ImagesTable
+      - Statement:
+        - Effect: Allow
+          Action:
+          - logs:CreateLogGroup
+          - logs:CreateLogStream
+          - logs:PutLogEvents
+          Resource:
+          - Fn::Sub: arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*
+      Environment:
+        Variables:
+          PB_IMAGES_TABLE:
+            Ref: ImagesTable
+      Events:
+        GetRecycledImages:
+          Type: Api
+          Properties:
+            Path: /images/recycled
+            Method: get
+            RestApiId:
+              Ref: MyApi
+            Auth:
+              Authorizer: CognitoAuthorizer
+    Metadata:
+      SamResourceId: GetAllRecycledImagesFunction
   StagingBucket:
     Type: AWS::S3::Bucket
     Properties:
