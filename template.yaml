@@ -20,6 +20,10 @@ Globals:
         PB_LOGIN_TOPIC: !Ref LoginNotificationTopic
 
 Parameters:
+  HostedZoneId:
+    Type: String
+    Description: The Route53 Hosted Zone ID for DNS records
+
   Environment:
     Type: String
     Default: primary
