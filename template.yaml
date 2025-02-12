@@ -770,3 +770,7 @@ Outputs:
   ImagesTableName:
     Description: Name of the DynamoDB images table
     Value: !Ref ImagesTable
+
+  ApiId:
+    Description: "API Gateway ID"
+    Value: !Ref MyApi
