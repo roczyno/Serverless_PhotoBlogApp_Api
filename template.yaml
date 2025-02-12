@@ -19,7 +19,28 @@ Globals:
         PB_COGNITO_USER_POOL_ID: !Ref PhotoBlogAppUserPool
         PB_LOGIN_TOPIC: !Ref LoginNotificationTopic
 
+Parameters:
+  Environment:
+    Type: String
+    Default: primary
+    AllowedValues:
+      - primary
+      - secondary
+    Description: Deployment environment (primary or secondary region)
 
+  PrimaryRegion:
+    Type: String
+    Default: eu-west-1
+    Description: Primary AWS Region
+
+  SecondaryRegion:
+    Type: String
+    Default: eu-central-1
+    Description: Secondary AWS Region
+
+Conditions:
+  IsPrimary: !Equals [!Ref Environment, 'primary']
+  IsSecondary: !Equals [!Ref Environment, 'secondary']
 
 Resources:
 
@@ -508,22 +529,21 @@ Resources:
 
   PrimaryBucket:
     Type: AWS::S3::Bucket
+    Condition: IsPrimary
     Properties:
-      BucketName: photoblogapp-primary-bucket
-      CorsConfiguration:
-        CorsRules:
-          - AllowedHeaders: [ '*' ]
-            AllowedMethods: [ GET ]
-            AllowedOrigins: [ '*' ]
-            MaxAge: 3000
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: false
-        BlockPublicPolicy: false
-        IgnorePublicAcls: false
-        RestrictPublicBuckets: false
-      OwnershipControls:
+      BucketName: !Sub "photoblogapp-primary-bucket-${AWS::Region}"
+      VersioningConfiguration:
+        Status: Enabled
+      ReplicationConfiguration:
+        Role: !GetAtt S3ReplicationRole.Arn
         Rules:
-          - ObjectOwnership: ObjectWriter
+          - Id: ReplicateToSecondary
+            Status: Enabled
+            Destination:
+              Bucket: !Sub "arn:aws:s3:::photoblogapp-primary-bucket-${SecondaryRegion}"
+              StorageClass: STANDARD
+            DeleteMarkerReplication:
+              Status: Enabled
 
   PrimaryBucketPolicy:
     Type: AWS::S3::BucketPolicy
@@ -538,11 +558,54 @@ Resources:
             Action: "s3:GetObject"
             Resource: !Sub "arn:aws:s3:::${PrimaryBucket}/*"
 
+  SecondaryBucket:
+    Type: AWS::S3::Bucket
+    Condition: IsSecondary
+    Properties:
+      BucketName: !Sub "photoblogapp-primary-bucket-${AWS::Region}"
+      VersioningConfiguration:
+        Status: Enabled
+
+
+  S3ReplicationRole:
+    Type: AWS::IAM::Role
+    Condition: IsPrimary
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: s3.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: S3ReplicationPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetReplicationConfiguration
+                  - s3:ListBucket
+                Resource: !Sub "arn:aws:s3:::photoblogapp-primary-bucket-${AWS::Region}"
+              - Effect: Allow
+                Action:
+                  - s3:GetObjectVersionForReplication
+                  - s3:GetObjectVersionAcl
+                  - s3:GetObjectVersionTagging
+                Resource: !Sub "arn:aws:s3:::photoblogapp-primary-bucket-${AWS::Region}/*"
+              - Effect: Allow
+                Action:
+                  - s3:ReplicateObject
+                  - s3:ReplicateDelete
+                  - s3:ReplicateTags
+                Resource: !Sub "arn:aws:s3:::photoblogapp-primary-bucket-${SecondaryRegion}/*"
+
 
   ImagesTable:
-    Type: AWS::DynamoDB::Table
+    Type: AWS::DynamoDB::GlobalTable
     Properties:
-      TableName: photoblogapp-images
+      TableName: !Sub "photoblogapp-images-${Environment}"
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: imageId
@@ -559,10 +622,114 @@ Resources:
               KeyType: HASH
           Projection:
             ProjectionType: ALL
-      # Optional: Add a TTL for permanently deleted items
+      Replicas:
+        - Region: !Ref PrimaryRegion
+          ContributorInsightsSpecification:
+            Enabled: true
+        - Region: !Ref SecondaryRegion
+          ContributorInsightsSpecification:
+            Enabled: true
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
       TimeToLiveSpecification:
         AttributeName: ttl
         Enabled: true
+
+  ApiHealthCheck:
+    Type: AWS::Route53::HealthCheck
+    Condition: IsPrimary
+    Properties:
+      HealthCheckConfig:
+        Port: 443
+        Type: HTTPS
+        ResourcePath: /prod/health
+        FullyQualifiedDomainName: !Sub "${MyApi}.execute-api.${AWS::Region}.amazonaws.com"
+        RequestInterval: 30
+        FailureThreshold: 3
+      HealthCheckTags:
+        - Key: Name
+          Value: ApiGatewayHealthCheck
+
+
+  ApiHealthNotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub "api-health-notifications-${Environment}"
+
+
+  ApiHealthAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: IsPrimary
+    Properties:
+      AlarmDescription: Monitor API Gateway health
+      MetricName: HealthCheckStatus
+      Namespace: AWS/Route53
+      Statistic: Minimum
+      Period: 60
+      EvaluationPeriods: 2
+      Threshold: 1
+      ComparisonOperator: LessThanThreshold
+      Dimensions:
+        - Name: HealthCheckId
+          Value: !Ref ApiHealthCheck
+      AlarmActions:
+        - !Ref ApiHealthNotificationTopic
+        - !Ref FailoverFunction
+
+
+
+  FailoverFunction:
+    Type: AWS::Serverless::Function
+    Condition: IsPrimary
+    Properties:
+      CodeUri: PhotoBlogAppApi
+      Handler: com.roczyno.aws.photoblogapp.dr.FailoverHandler::handleRequest
+      Environment:
+        Variables:
+          PRIMARY_API_ID: !Ref MyApi
+          SECONDARY_API_ID: !Sub "{{resolve:ssm:/photoblog/secondary/api-id}}"
+          NOTIFICATION_TOPIC: !Ref ApiHealthNotificationTopic
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - route53:ChangeResourceRecordSets
+              Resource: !Sub "arn:aws:route53:::hostedzone/${HostedZoneId}"
+            - Effect: Allow
+              Action:
+                - sns:Publish
+              Resource: !Ref ApiHealthNotificationTopic
+
+
+  ApiDnsRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: api.photoblogapp.com
+      Type: A
+      AliasTarget:
+        DNSName: !Sub "${MyApi}.execute-api.${AWS::Region}.amazonaws.com"
+        HostedZoneId: !Sub "Z1UJRXOUMOOFQ8" # API Gateway hosted zone ID
+      SetIdentifier: !Sub "${Environment}-region"
+      Weight: !If [ IsPrimary, 100, 0 ]
+      HealthCheckId: !If [ IsPrimary, !Ref ApiHealthCheck, !Ref "AWS::NoValue" ]
+
+  HealthCheckFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: PhotoBlogAppApi
+      Handler: com.roczyno.aws.photoblogapp.health.HealthCheckHandler::handleRequest
+      Events:
+        HealthCheck:
+          Type: Api
+          Properties:
+            Path: /health
+            Method: get
+            RestApiId: !Ref MyApi
+            Auth:
+              Authorizer: NONE
+
 
 
 Outputs:

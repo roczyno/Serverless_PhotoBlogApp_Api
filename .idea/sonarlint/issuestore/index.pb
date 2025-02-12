@@ -41,9 +41,9 @@ ZPhotoBlogAppApi/src/main/java/com/roczyno/aws/photoblogapp/image/GetUserImagesH
 [PhotoBlogAppApi/src/main/java/com/roczyno/aws/photoblogapp/image/ImageRecyclingHandler.java,0\c\0cd38f46a4b2178bbfdc3f7583b7be7a3148c624
 ‘
 aPhotoBlogAppApi/src/main/java/com/roczyno/aws/photoblogapp/image/GetAllRecycledImagesHandler.java,9\1\91933257bf06828922b790a53030758c3806f3da
-G
-pipeline-bootstrap.yaml,a\f\af7a50e66a336fa9f1752621e6036501bd6770ac
-=
-pipeline.yaml,a\4\a4a414db1477fdebf69e9898924d29aa5ecd5113
 O
 .github/workflows/pipeline.yaml,0\0\005148ba6c02c1d20e7c2833f08625a8ebe254cf
+‰
+YPhotoBlogAppApi/src/main/java/com/roczyno/aws/photoblogapp/health/HealthCheckHandler.java,5\8\587c82f8b18b17b59d177e6c2a68cdf14aebdb39
+‚
+RPhotoBlogAppApi/src/main/java/com/roczyno/aws/photoblogapp/dr/FailoverHandler.java,e\6\e6f137b51a2e740babc472da036525dfe473f77f
