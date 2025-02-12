@@ -707,15 +707,16 @@ Resources:
   ApiDnsRecord:
     Type: AWS::Route53::RecordSet
     Properties:
-      HostedZoneId: !Ref HostedZoneId   # Your Route53 hosted zone ID
+      HostedZoneId: !Ref HostedZoneId   # Your Route 53 hosted zone ID
       Name: api.photoblogapp.com
       Type: A
       AliasTarget:
         DNSName: !Sub "${MyApi}.execute-api.${AWS::Region}.amazonaws.com"
-        HostedZoneId: !Sub "${!FindInMap ['RegionMap', ${AWS::Region}, 'ApiGatewayHostedZoneId']}"  # Use mapped hosted zone ID
+        HostedZoneId: !FindInMap [ RegionMap, !Ref AWS::Region, ApiGatewayHostedZoneId ]  # Correct usage
       SetIdentifier: !Sub "${Environment}-region"
       Weight: !If [ IsPrimary, 100, 0 ]
       HealthCheckId: !If [ IsPrimary, !Ref ApiHealthCheck, !Ref "AWS::NoValue" ]
+
 
 Mappings:
   RegionMap:
