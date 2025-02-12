@@ -293,7 +293,7 @@ Resources:
         - S3CrudPolicy:
             BucketName: !Ref StagingBucket
         - S3CrudPolicy:
-            BucketName: !Ref PrimaryBucket
+            BucketName: !If [IsPrimary, !Ref PrimaryBucket, !Sub "photoblogapp-primary-bucket-${PrimaryRegion}"]
         - DynamoDBCrudPolicy:
             TableName: !Ref ImagesTable
         - SNSPublishMessagePolicy:
@@ -310,7 +310,7 @@ Resources:
                 - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*"
       Environment:
         Variables:
-          PB_PRIMARY_BUCKET: !Ref PrimaryBucket
+          PB_PRIMARY_BUCKET: !If [IsPrimary, !Ref PrimaryBucket, !Sub "photoblogapp-primary-bucket-${PrimaryRegion}"]
           PB_IMAGES_TABLE: !Ref ImagesTable
           PB_FAILURE_NOTIFICATION_TOPIC: !Ref ImageProcessingFailureNotificationTopic
 
@@ -390,7 +390,7 @@ Resources:
         - DynamoDBReadPolicy:
             TableName: !Ref ImagesTable
         - S3ReadPolicy:
-            BucketName: !Ref PrimaryBucket
+            BucketName: !If [IsPrimary, !Ref PrimaryBucket, !Sub "photoblogapp-primary-bucket-${PrimaryRegion}"]
         - Statement:
             - Effect: Allow
               Action:
@@ -401,7 +401,7 @@ Resources:
                 - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*"
       Environment:
         Variables:
-          PRIMARY_BUCKET: !Ref PrimaryBucket
+          PRIMARY_BUCKET: !If [IsPrimary, !Ref PrimaryBucket, !Sub "photoblogapp-primary-bucket-${PrimaryRegion}"]
           IMAGES_TABLE: !Ref ImagesTable
       Events:
         ShareImage:
@@ -420,7 +420,7 @@ Resources:
       Handler: com.roczyno.aws.photoblogapp.image.ImageRecyclingHandler::handleRequest
       Policies:
         - S3CrudPolicy:
-            BucketName: !Ref PrimaryBucket
+            BucketName: !If [IsPrimary, !Ref PrimaryBucket, !Sub "photoblogapp-primary-bucket-${PrimaryRegion}"]
         - DynamoDBCrudPolicy:
             TableName: !Ref ImagesTable
         - Statement:
@@ -433,7 +433,7 @@ Resources:
                 - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*"
       Environment:
         Variables:
-          PB_PRIMARY_BUCKET: !Ref PrimaryBucket
+          PB_PRIMARY_BUCKET: !If [IsPrimary, !Ref PrimaryBucket, !Sub "photoblogapp-primary-bucket-${PrimaryRegion}"]
           PB_IMAGES_TABLE: !Ref ImagesTable
       Events:
         MoveToRecycleBin:
@@ -551,6 +551,7 @@ Resources:
 
   PrimaryBucketPolicy:
     Type: AWS::S3::BucketPolicy
+    Condition: IsPrimary
     Properties:
       Bucket: !Ref PrimaryBucket
       PolicyDocument:
@@ -764,7 +765,7 @@ Outputs:
 
   PrimaryBucketName:
     Description: Name of the primary S3 bucket
-    Value: !Ref PrimaryBucket
+    Value: !If [IsPrimary, !Ref PrimaryBucket, !Sub "photoblogapp-primary-bucket-${PrimaryRegion}"]
 
   ImagesTableName:
     Description: Name of the DynamoDB images table
