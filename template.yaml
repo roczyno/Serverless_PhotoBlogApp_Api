@@ -704,15 +704,38 @@ Resources:
               Resource: !Ref ApiHealthNotificationTopic
 
 
+  ApiCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: api.photoblogapp.com
+      ValidationMethod: DNS
+
+  ApiDomainName:
+    Type: AWS::ApiGateway::DomainName
+    Properties:
+      DomainName: api.photoblogapp.com
+      RegionalCertificateArn: !Ref ApiCertificate
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      SecurityPolicy: TLS_1_2
+
+  ApiMapping:
+    Type: AWS::ApiGateway::BasePathMapping
+    Properties:
+      DomainName: !Ref ApiDomainName
+      RestApiId: !Ref MyApi
+      Stage: Prod
+
   ApiDnsRecord:
     Type: AWS::Route53::RecordSet
     Properties:
-      HostedZoneId: !Ref HostedZoneId   # Your Route53 hosted zone ID
+      HostedZoneId: !Ref HostedZoneId
       Name: api.photoblogapp.com
       Type: A
       AliasTarget:
-        DNSName: !Sub "${MyApi}.execute-api.${AWS::Region}.amazonaws.com"
-        HostedZoneId: Z2FDTNDATAQYW2 # Same for both regions
+        DNSName: !GetAtt ApiDomainName.RegionalDomainName
+        HostedZoneId: !GetAtt ApiDomainName.RegionalHostedZoneId
       SetIdentifier: !Sub "${Environment}-region"
       Weight: !If [ IsPrimary, 100, 0 ]
       HealthCheckId: !If [ IsPrimary, !Ref ApiHealthCheck, !Ref "AWS::NoValue" ]
