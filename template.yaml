@@ -123,8 +123,6 @@ Resources:
       UserPoolId: !Ref PhotoBlogAppUserPool
 
 
-
-
   # API Gateway
   MyApi:
     Type: AWS::Serverless::Api
@@ -141,7 +139,6 @@ Resources:
         AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Requested-With'"
         AllowOrigin: "'*'"
         MaxAge: "'3600'"
-
 
   LoginUserHandlerFunction:
     Type: AWS::Serverless::Function
