@@ -495,7 +495,7 @@ Resources:
   StagingBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: photoblogapp-staging-bucket
+      BucketName: "photoblogapp-staging-bucket-${AWS::Region}"
       CorsConfiguration:
         CorsRules:
           - AllowedHeaders: [ '*' ]
