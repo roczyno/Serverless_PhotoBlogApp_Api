@@ -707,15 +707,12 @@ Resources:
   ApiDnsRecord:
     Type: AWS::Route53::RecordSet
     Properties:
-      HostedZoneId: !Ref HostedZoneId
+      HostedZoneId: !Ref HostedZoneId   # Your Route53 hosted zone ID
       Name: api.photoblogapp.com
       Type: A
       AliasTarget:
         DNSName: !Sub "${MyApi}.execute-api.${AWS::Region}.amazonaws.com"
-        HostedZoneId: !If
-          - IsPrimary
-          - ZLY8HYME6SFDD  # eu-west-1 (Ireland)
-          - Z1FRNW7UH4DEZJ  # eu-central-1 (Frankfurt)
+        HostedZoneId: Z2FDTNDATAQYW2 # Same for both regions
       SetIdentifier: !Sub "${Environment}-region"
       Weight: !If [ IsPrimary, 100, 0 ]
       HealthCheckId: !If [ IsPrimary, !Ref ApiHealthCheck, !Ref "AWS::NoValue" ]

@@ -52,7 +52,7 @@ public class FailoverHandler implements RequestHandler<SNSEvent, Void> {
 											.aliasTarget(AliasTarget.builder()
 													.dnsName(System.getenv("PRIMARY_API_ID") + ".execute-api." +
 															System.getenv("AWS_REGION") + ".amazonaws.com")
-													.hostedZoneId("ZLY8HYME6SFDD") // API Gateway hosted zone ID
+													.hostedZoneId("Z2FDTNDATAQYW2") // API Gateway hosted zone ID
 													.evaluateTargetHealth(true)
 													.build())
 											.build())
@@ -67,7 +67,7 @@ public class FailoverHandler implements RequestHandler<SNSEvent, Void> {
 											.aliasTarget(AliasTarget.builder()
 													.dnsName(System.getenv("SECONDARY_API_ID") + ".execute-api." +
 															System.getenv("SECONDARY_REGION") + ".amazonaws.com")
-													.hostedZoneId("Z1FRNW7UH4DEZJ")
+													.hostedZoneId("Z2FDTNDATAQYW2")
 													.evaluateTargetHealth(true)
 													.build())
 											.build())
