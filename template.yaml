@@ -718,12 +718,12 @@ Resources:
       HealthCheckId: !If [ IsPrimary, !Ref ApiHealthCheck, !Ref "AWS::NoValue" ]
 
 
-Mappings:
-  RegionMap:
-    eu-west-1:
-      ApiGatewayHostedZoneId: ZLY8HYME6SFDD
-    eu-central-1:
-      ApiGatewayHostedZoneId: Z1FRNW7UH4DEZJ  # Frankfurt
+  Mappings:
+    RegionMap:
+      eu-west-1:
+        ApiGatewayHostedZoneId: ZLY8HYME6SFDD
+      eu-central-1:
+        ApiGatewayHostedZoneId: Z1FRNW7UH4DEZJ  # Frankfurt
 
   HealthCheckFunction:
     Type: AWS::Serverless::Function
