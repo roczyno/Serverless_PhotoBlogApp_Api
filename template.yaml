@@ -785,7 +785,6 @@ Outputs:
     Description: "Cognito User Pool Domain"
     Value: !Sub "https://${PhotoBlogAppUserPoolDomain}.auth.${AWS::Region}.amazoncognito.com"
 
-
   PrimaryBucketName:
     Description: Name of the primary S3 bucket
     Value: !If [IsPrimary, !Ref PrimaryBucket, !Sub "photoblogapp-primary-bucket-${PrimaryRegion}"]
@@ -797,3 +796,4 @@ Outputs:
   ApiId:
     Description: "API Gateway ID"
     Value: !Ref MyApi
+
