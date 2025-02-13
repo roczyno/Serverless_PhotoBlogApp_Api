@@ -587,7 +587,10 @@ Resources:
           - Sid: AllowReplication
             Effect: Allow
             Principal:
-              AWS: !GetAtt S3ReplicationRole.Arn  # ✅ Fix Principal Reference
+              AWS: !If
+                - IsReplicationRoleNeeded  # ✅ Check if the role exists (either in primary or secondary)
+                - !Sub "arn:aws:iam::${AWS::AccountId}:role/photoblogapp-S3ReplicationRole-${AWS::Region}"
+                - !Ref AWS::NoValue  # ✅ Remove principal if role is not created
             Action:
               - s3:ReplicateObject
               - s3:ReplicateDelete
@@ -595,17 +598,9 @@ Resources:
               - s3:GetObjectVersionTagging
               - s3:ObjectOwnerOverrideToBucketOwner
             Resource: !Sub "arn:aws:s3:::${SecondaryBucket}/*"
-          - Sid: AllowReplicationConfig
-            Effect: Allow
-            Principal:
-              AWS: !GetAtt S3ReplicationRole.Arn  # ✅ Fix Principal Reference
-            Action:
-              - s3:List*
-              - s3:GetBucketVersioning
-              - s3:PutBucketVersioning
-            Resource: !Sub "arn:aws:s3:::${SecondaryBucket}"
     DependsOn:
       - S3ReplicationRole  # ✅ Ensures IAM Role is created before Policy
+
 
 
 
