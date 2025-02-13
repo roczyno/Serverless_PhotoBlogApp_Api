@@ -585,7 +585,7 @@ Resources:
           - Sid: AllowReplication
             Effect: Allow
             Principal:
-              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:role/${S3ReplicationRole}"
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:role/photoblogapp-primary-S3ReplicationRole"  # Modified this line
             Action:
               - s3:ReplicateObject
               - s3:ReplicateDelete
@@ -596,7 +596,7 @@ Resources:
           - Sid: AllowReplicationConfig
             Effect: Allow
             Principal:
-              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:role/${S3ReplicationRole}"
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:role/photoblogapp-primary-S3ReplicationRole"  # Modified this line
             Action:
               - s3:List*
               - s3:GetBucketVersioning
@@ -608,6 +608,7 @@ Resources:
     Type: AWS::IAM::Role
     Condition: IsPrimary
     Properties:
+      RoleName: photoblogapp-primary-S3ReplicationRole
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
