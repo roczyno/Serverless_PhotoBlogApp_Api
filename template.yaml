@@ -45,6 +45,8 @@ Parameters:
 Conditions:
   IsPrimary: !Equals [!Ref Environment, 'primary']
   IsSecondary: !Equals [!Ref Environment, 'secondary']
+  IsReplicationRoleNeeded: !Or [!Condition IsPrimary, !Condition IsSecondary]
+
 
 Resources:
 
@@ -609,9 +611,9 @@ Resources:
 
   S3ReplicationRole:
     Type: AWS::IAM::Role
-    Condition: IsPrimary
+    Condition: IsReplicationRoleNeeded  # ✅ This ensures the role exists in both primary and secondary stacks
     Properties:
-      RoleName: photoblogapp-primary-S3ReplicationRole
+      RoleName: !Sub "photoblogapp-S3ReplicationRole-${AWS::Region}"
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -641,6 +643,7 @@ Resources:
                   - s3:ReplicateDelete
                   - s3:ReplicateTags
                 Resource: !Sub "arn:aws:s3:::photoblogapp-primary-bucket-${SecondaryRegion}/*"
+
 
 
   ImagesTable:
