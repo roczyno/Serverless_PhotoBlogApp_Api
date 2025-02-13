@@ -545,9 +545,7 @@ Resources:
             Destination:
               Bucket: !Sub "arn:aws:s3:::photoblogapp-primary-bucket-${SecondaryRegion}"
               Account: !Ref AWS::AccountId
-            SourceSelectionCriteria:
-              ReplicaModifications:
-                Status: Enabled
+
 
   PrimaryBucketPolicy:
     Type: AWS::S3::BucketPolicy
