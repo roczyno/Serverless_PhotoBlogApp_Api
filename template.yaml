@@ -542,7 +542,6 @@ Resources:
         Rules:
           - Id: ReplicateToSecondary
             Status: Enabled
-            Priority: 1
             DeleteMarkerReplication:
               Status: Enabled
             Destination:
