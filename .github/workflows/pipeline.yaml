@@ -38,7 +38,7 @@ jobs:
         run: |
           sam deploy \
             --stack-name photoblogapp-secondary \
-            --capabilities CAPABILITY_IAM \
+            --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
             --region ${SECONDARY_REGION} \
             --resolve-s3 \
             --no-fail-on-empty-changeset \
