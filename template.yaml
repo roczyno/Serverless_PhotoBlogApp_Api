@@ -542,8 +542,6 @@ Resources:
         Rules:
           - Id: ReplicateToSecondary
             Status: Enabled
-            DeleteMarkerReplication:
-              Status: Enabled
             Destination:
               Bucket: !Sub "arn:aws:s3:::photoblogapp-primary-bucket-${SecondaryRegion}"
               Account: !Ref AWS::AccountId
