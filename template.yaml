@@ -540,11 +540,15 @@ Resources:
         Rules:
           - Id: ReplicateToSecondary
             Status: Enabled
-            Destination:
-              Bucket: !Sub "arn:aws:s3:::photoblogapp-primary-bucket-${SecondaryRegion}"
-              StorageClass: STANDARD
+            Priority: 1
             DeleteMarkerReplication:
               Status: Enabled
+            Destination:
+              Bucket: !Sub "arn:aws:s3:::photoblogapp-primary-bucket-${SecondaryRegion}"
+              Account: !Ref AWS::AccountId
+            SourceSelectionCriteria:
+              ReplicaModifications:
+                Status: Enabled
 
   PrimaryBucketPolicy:
     Type: AWS::S3::BucketPolicy
@@ -567,6 +571,37 @@ Resources:
       BucketName: !Sub "photoblogapp-primary-bucket-${AWS::Region}"
       VersioningConfiguration:
         Status: Enabled
+
+
+
+  SecondaryBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Condition: IsSecondary
+    Properties:
+      Bucket: !Ref SecondaryBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowReplication
+            Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:role/${S3ReplicationRole}"
+            Action:
+              - s3:ReplicateObject
+              - s3:ReplicateDelete
+              - s3:ReplicateTags
+              - s3:GetObjectVersionTagging
+              - s3:ObjectOwnerOverrideToBucketOwner
+            Resource: !Sub "arn:aws:s3:::${SecondaryBucket}/*"
+          - Sid: AllowReplicationConfig
+            Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:role/${S3ReplicationRole}"
+            Action:
+              - s3:List*
+              - s3:GetBucketVersioning
+              - s3:PutBucketVersioning
+            Resource: !Sub "arn:aws:s3:::${SecondaryBucket}"
 
 
   S3ReplicationRole:
