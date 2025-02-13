@@ -585,7 +585,7 @@ Resources:
           - Sid: AllowReplication
             Effect: Allow
             Principal:
-              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:role/photoblogapp-primary-S3ReplicationRole"  # Modified this line
+              AWS: !GetAtt S3ReplicationRole.Arn  # ✅ Fix Principal Reference
             Action:
               - s3:ReplicateObject
               - s3:ReplicateDelete
@@ -596,12 +596,15 @@ Resources:
           - Sid: AllowReplicationConfig
             Effect: Allow
             Principal:
-              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:role/photoblogapp-primary-S3ReplicationRole"  # Modified this line
+              AWS: !GetAtt S3ReplicationRole.Arn  # ✅ Fix Principal Reference
             Action:
               - s3:List*
               - s3:GetBucketVersioning
               - s3:PutBucketVersioning
             Resource: !Sub "arn:aws:s3:::${SecondaryBucket}"
+    DependsOn:
+      - S3ReplicationRole  # ✅ Ensures IAM Role is created before Policy
+
 
 
   S3ReplicationRole:
