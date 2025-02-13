@@ -637,126 +637,126 @@ Resources:
         AttributeName: ttl
         Enabled: true
 
-  ApiHealthCheck:
-    Type: AWS::Route53::HealthCheck
-    Condition: IsPrimary
-    Properties:
-      HealthCheckConfig:
-        Port: 443
-        Type: HTTPS
-        ResourcePath: /prod/health
-        FullyQualifiedDomainName: !Sub "${MyApi}.execute-api.${AWS::Region}.amazonaws.com"
-        RequestInterval: 30
-        FailureThreshold: 3
-      HealthCheckTags:
-        - Key: Name
-          Value: ApiGatewayHealthCheck
-
-
-  ApiHealthNotificationTopic:
-    Type: AWS::SNS::Topic
-    Properties:
-      TopicName: !Sub "api-health-notifications-${Environment}"
-
-
-  ApiHealthAlarm:
-    Type: AWS::CloudWatch::Alarm
-    Condition: IsPrimary
-    Properties:
-      AlarmDescription: Monitor API Gateway health
-      MetricName: HealthCheckStatus
-      Namespace: AWS/Route53
-      Statistic: Minimum
-      Period: 60
-      EvaluationPeriods: 2
-      Threshold: 1
-      ComparisonOperator: LessThanThreshold
-      Dimensions:
-        - Name: HealthCheckId
-          Value: !Ref ApiHealthCheck
-      AlarmActions:
-        - !Ref ApiHealthNotificationTopic
-        - !Ref FailoverFunction
-
-
-
-  FailoverFunction:
-    Type: AWS::Serverless::Function
-    Condition: IsPrimary
-    Properties:
-      CodeUri: PhotoBlogAppApi
-      Handler: com.roczyno.aws.photoblogapp.dr.FailoverHandler::handleRequest
-      Environment:
-        Variables:
-          PRIMARY_API_ID: !Ref MyApi
-          SECONDARY_API_ID: !Sub "{{resolve:ssm:/photoblog/secondary/api-id}}"
-          NOTIFICATION_TOPIC: !Ref ApiHealthNotificationTopic
-      Policies:
-        - Version: '2012-10-17'
-          Statement:
-            - Effect: Allow
-              Action:
-                - route53:ChangeResourceRecordSets
-              Resource: !Sub "arn:aws:route53:::hostedzone/${HostedZoneId}"
-            - Effect: Allow
-              Action:
-                - sns:Publish
-              Resource: !Ref ApiHealthNotificationTopic
-
-
-  ApiCertificate:
-    Type: AWS::CertificateManager::Certificate
-    Properties:
-      DomainName: api.photoblogapp.com
-      ValidationMethod: DNS
-
-  ApiDomainName:
-    Type: AWS::ApiGateway::DomainName
-    Properties:
-      DomainName: api.photoblogapp.com
-      RegionalCertificateArn: !Ref ApiCertificate
-      EndpointConfiguration:
-        Types:
-          - REGIONAL
-      SecurityPolicy: TLS_1_2
-
-  ApiMapping:
-    Type: AWS::ApiGateway::BasePathMapping
-    Properties:
-      DomainName: !Ref ApiDomainName
-      RestApiId: !Ref MyApi
-      Stage: Prod
-
-  ApiDnsRecord:
-    Type: AWS::Route53::RecordSet
-    Properties:
-      HostedZoneId: !Ref HostedZoneId
-      Name: api.photoblogapp.com
-      Type: A
-      AliasTarget:
-        DNSName: !GetAtt ApiDomainName.RegionalDomainName
-        HostedZoneId: !GetAtt ApiDomainName.RegionalHostedZoneId
-      SetIdentifier: !Sub "${Environment}-region"
-      Weight: !If [ IsPrimary, 100, 0 ]
-      HealthCheckId: !If [ IsPrimary, !Ref ApiHealthCheck, !Ref "AWS::NoValue" ]
-
-
-   # Frankfurt
-
-  HealthCheckFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: PhotoBlogAppApi
-      Handler: com.roczyno.aws.photoblogapp.health.HealthCheckHandler::handleRequest
-      Events:
-        HealthCheck:
-          Type: Api
-          Properties:
-            Path: /health
-            Method: get
-            RestApiId: !Ref MyApi
-            Auth:
-              Authorizer: NONE
+#  ApiHealthCheck:
+#    Type: AWS::Route53::HealthCheck
+#    Condition: IsPrimary
+#    Properties:
+#      HealthCheckConfig:
+#        Port: 443
+#        Type: HTTPS
+#        ResourcePath: /prod/health
+#        FullyQualifiedDomainName: !Sub "${MyApi}.execute-api.${AWS::Region}.amazonaws.com"
+#        RequestInterval: 30
+#        FailureThreshold: 3
+#      HealthCheckTags:
+#        - Key: Name
+#          Value: ApiGatewayHealthCheck
+#
+#
+#  ApiHealthNotificationTopic:
+#    Type: AWS::SNS::Topic
+#    Properties:
+#      TopicName: !Sub "api-health-notifications-${Environment}"
+#
+#
+#  ApiHealthAlarm:
+#    Type: AWS::CloudWatch::Alarm
+#    Condition: IsPrimary
+#    Properties:
+#      AlarmDescription: Monitor API Gateway health
+#      MetricName: HealthCheckStatus
+#      Namespace: AWS/Route53
+#      Statistic: Minimum
+#      Period: 60
+#      EvaluationPeriods: 2
+#      Threshold: 1
+#      ComparisonOperator: LessThanThreshold
+#      Dimensions:
+#        - Name: HealthCheckId
+#          Value: !Ref ApiHealthCheck
+#      AlarmActions:
+#        - !Ref ApiHealthNotificationTopic
+#        - !Ref FailoverFunction
+#
+#
+#
+#  FailoverFunction:
+#    Type: AWS::Serverless::Function
+#    Condition: IsPrimary
+#    Properties:
+#      CodeUri: PhotoBlogAppApi
+#      Handler: com.roczyno.aws.photoblogapp.dr.FailoverHandler::handleRequest
+#      Environment:
+#        Variables:
+#          PRIMARY_API_ID: !Ref MyApi
+#          SECONDARY_API_ID: !Sub "{{resolve:ssm:/photoblog/secondary/api-id}}"
+#          NOTIFICATION_TOPIC: !Ref ApiHealthNotificationTopic
+#      Policies:
+#        - Version: '2012-10-17'
+#          Statement:
+#            - Effect: Allow
+#              Action:
+#                - route53:ChangeResourceRecordSets
+#              Resource: !Sub "arn:aws:route53:::hostedzone/${HostedZoneId}"
+#            - Effect: Allow
+#              Action:
+#                - sns:Publish
+#              Resource: !Ref ApiHealthNotificationTopic
+#
+#
+#  ApiCertificate:
+#    Type: AWS::CertificateManager::Certificate
+#    Properties:
+#      DomainName: api.photoblogapp.com
+#      ValidationMethod: DNS
+#
+#  ApiDomainName:
+#    Type: AWS::ApiGateway::DomainName
+#    Properties:
+#      DomainName: api.photoblogapp.com
+#      RegionalCertificateArn: !Ref ApiCertificate
+#      EndpointConfiguration:
+#        Types:
+#          - REGIONAL
+#      SecurityPolicy: TLS_1_2
+#
+#  ApiMapping:
+#    Type: AWS::ApiGateway::BasePathMapping
+#    Properties:
+#      DomainName: !Ref ApiDomainName
+#      RestApiId: !Ref MyApi
+#      Stage: Prod
+#
+#  ApiDnsRecord:
+#    Type: AWS::Route53::RecordSet
+#    Properties:
+#      HostedZoneId: !Ref HostedZoneId
+#      Name: api.photoblogapp.com
+#      Type: A
+#      AliasTarget:
+#        DNSName: !GetAtt ApiDomainName.RegionalDomainName
+#        HostedZoneId: !GetAtt ApiDomainName.RegionalHostedZoneId
+#      SetIdentifier: !Sub "${Environment}-region"
+#      Weight: !If [ IsPrimary, 100, 0 ]
+#      HealthCheckId: !If [ IsPrimary, !Ref ApiHealthCheck, !Ref "AWS::NoValue" ]
+#
+#
+#   # Frankfurt
+#
+#  HealthCheckFunction:
+#    Type: AWS::Serverless::Function
+#    Properties:
+#      CodeUri: PhotoBlogAppApi
+#      Handler: com.roczyno.aws.photoblogapp.health.HealthCheckHandler::handleRequest
+#      Events:
+#        HealthCheck:
+#          Type: Api
+#          Properties:
+#            Path: /health
+#            Method: get
+#            RestApiId: !Ref MyApi
+#            Auth:
+#              Authorizer: NONE
 
 
 
