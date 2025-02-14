@@ -535,6 +535,11 @@ Resources:
     Condition: IsPrimary
     Properties:
       BucketName: !Sub "photoblogapp-primary-bucket-${AWS::Region}"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false        # This allows public bucket policies
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
       VersioningConfiguration:
         Status: Enabled
       ReplicationConfiguration:
