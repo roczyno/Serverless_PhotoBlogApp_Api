@@ -698,9 +698,7 @@ Resources:
           Value: d3f3a0b9-9205-45f3-9469-8d4c0e1c6818
       AlarmActions:
         - !Ref ApiHealthNotificationTopic
-        - !Ref FailoverFunction
-
-
+        - !GetAtt FailoverFunction.Arn  # ✅ Fix: Use ARN
 
   FailoverFunction:
     Type: AWS::Serverless::Function

@@ -20,7 +20,7 @@ public class FailoverHandler implements RequestHandler<SNSEvent, Void> {
 
 	private static final String HOSTED_ZONE_ID = System.getenv("HOSTED_ZONE_ID");
 	private static final String NOTIFICATION_TOPIC = System.getenv("NOTIFICATION_TOPIC");
-	private static final String DNS_NAME = "api.photoblogapp.com";
+	private static final String DNS_NAME = "api.jacobphotoblogapp.click";
 
 	@Override
 	public Void handleRequest(SNSEvent event, Context context) {
@@ -52,7 +52,7 @@ public class FailoverHandler implements RequestHandler<SNSEvent, Void> {
 											.aliasTarget(AliasTarget.builder()
 													.dnsName(System.getenv("PRIMARY_API_ID") + ".execute-api." +
 															System.getenv("AWS_REGION") + ".amazonaws.com")
-													.hostedZoneId("Z2FDTNDATAQYW2") // API Gateway hosted zone ID
+													.hostedZoneId("ZLY8HYME6SFDD") // API Gateway hosted zone ID
 													.evaluateTargetHealth(true)
 													.build())
 											.build())
@@ -67,7 +67,7 @@ public class FailoverHandler implements RequestHandler<SNSEvent, Void> {
 											.aliasTarget(AliasTarget.builder()
 													.dnsName(System.getenv("SECONDARY_API_ID") + ".execute-api." +
 															System.getenv("SECONDARY_REGION") + ".amazonaws.com")
-													.hostedZoneId("Z2FDTNDATAQYW2")
+													.hostedZoneId("Z1U9ULNL0V5AJ3")
 													.evaluateTargetHealth(true)
 													.build())
 											.build())
