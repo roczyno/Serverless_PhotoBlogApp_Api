@@ -677,13 +677,11 @@ Resources:
 
   ApiHealthNotificationTopic:
     Type: AWS::SNS::Topic
-    Condition: IsPrimary
     Properties:
       TopicName: !Sub "api-health-notifications-${Environment}"
 
   ApiHealthAlarm:
     Type: AWS::CloudWatch::Alarm
-    Condition: IsPrimary
     Properties:
       AlarmDescription: Monitor API Gateway health
       MetricName: HealthCheckStatus
@@ -698,7 +696,8 @@ Resources:
           Value: 6454589b-2d4e-485d-a922-6651fa68b729
       AlarmActions:
         - !Ref ApiHealthNotificationTopic
-        - !GetAtt FailoverFunction.Arn # ✅ Fix: Use ARN
+        - !GetAtt FailoverFunction.Arn
+
 
   FailoverFunction:
     Type: AWS::Serverless::Function
