@@ -677,6 +677,7 @@ Resources:
 
   ApiHealthNotificationTopic:
     Type: AWS::SNS::Topic
+    Condition: IsPrimary
     Properties:
       TopicName: !Sub "api-health-notifications-${Environment}"
 
