@@ -681,7 +681,6 @@ Resources:
     Properties:
       TopicName: !Sub "api-health-notifications-${Environment}"
 
-
   ApiHealthAlarm:
     Type: AWS::CloudWatch::Alarm
     Condition: IsPrimary
@@ -698,11 +697,8 @@ Resources:
         - Name: HealthCheckId
           Value: 6454589b-2d4e-485d-a922-6651fa68b729
       AlarmActions:
-        - !If
-          - IsPrimary
-          - !Ref ApiHealthNotificationTopic
-          - Ref: "AWS::NoValue"  # This ensures the alarm action is not set in the secondary region
-        - !GetAtt FailoverFunction.Arn  # ✅ Fix: Use ARN
+        - !Ref ApiHealthNotificationTopic
+        - !GetAtt FailoverFunction.Arn # ✅ Fix: Use ARN
 
   FailoverFunction:
     Type: AWS::Serverless::Function
