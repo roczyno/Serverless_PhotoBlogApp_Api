@@ -703,7 +703,6 @@ Resources:
 
   FailoverFunction:
     Type: AWS::Serverless::Function
-    Condition: IsPrimary
     Properties:
       CodeUri: PhotoBlogAppApi
       Handler: com.roczyno.aws.photoblogapp.dr.FailoverHandler::handleRequest
