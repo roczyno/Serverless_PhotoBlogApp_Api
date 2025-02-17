@@ -698,7 +698,10 @@ Resources:
         - Name: HealthCheckId
           Value: 6454589b-2d4e-485d-a922-6651fa68b729
       AlarmActions:
-        - !Ref ApiHealthNotificationTopic
+        - !If
+          - IsPrimary
+          - !Ref ApiHealthNotificationTopic
+          - Ref: "AWS::NoValue"  # This ensures the alarm action is not set in the secondary region
         - !GetAtt FailoverFunction.Arn  # ✅ Fix: Use ARN
 
   FailoverFunction:
