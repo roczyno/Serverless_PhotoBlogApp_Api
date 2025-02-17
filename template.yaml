@@ -695,7 +695,7 @@ Resources:
       ComparisonOperator: LessThanThreshold
       Dimensions:
         - Name: HealthCheckId
-          Value: d3f3a0b9-9205-45f3-9469-8d4c0e1c6818
+          Value: 6454589b-2d4e-485d-a922-6651fa68b729
       AlarmActions:
         - !Ref ApiHealthNotificationTopic
         - !GetAtt FailoverFunction.Arn  # ✅ Fix: Use ARN
