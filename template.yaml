@@ -185,7 +185,14 @@ Resources:
                 - cognito-idp:ConfirmSignUp
                 - cognito-idp:AdminCreateUser
                 - cognito-idp:AdminConfirmSignUp
-              Resource: !GetAtt PhotoBlogAppUserPool.Arn
+              Resource: "arn:aws:cognito-idp:eu-west-1:343218181928:userpool/eu-west-1_6bJny9B0G"
+            - Effect: Allow
+              Action:
+                - cognito-idp:SignUp
+                - cognito-idp:ConfirmSignUp
+                - cognito-idp:AdminCreateUser
+                - cognito-idp:AdminConfirmSignUp
+              Resource: "arn:aws:cognito-idp:eu-central-1:343218181928:userpool/eu-central-1_EvOxPU1Im"
             - Effect: Allow
               Action:
                 - sns:Subscribe
