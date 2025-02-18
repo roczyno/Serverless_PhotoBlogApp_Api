@@ -16,11 +16,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class GetAllRecycledImagesHandler implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
+public class GetAllUserRecycledImagesHandler implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
 	private final DynamoDbClient dynamoDbClient;
 	private final String imagesTable;
 
-	public GetAllRecycledImagesHandler() {
+	public GetAllUserRecycledImagesHandler() {
 		this.dynamoDbClient = DynamoDbClient.builder().build();
 		this.imagesTable = System.getenv("PB_IMAGES_TABLE");
 	}
@@ -30,12 +30,12 @@ public class GetAllRecycledImagesHandler implements RequestHandler<APIGatewayPro
 		LambdaLogger logger = context.getLogger();
 
 		try {
-			logger.log("Extracting user ID from authentication token");
-			String userId = extractUserId(input);
-			logger.log("Retrieved user ID: " + userId);
+			logger.log("Extracting user email from authentication token");
+			String email = extractUserId(input);
+			logger.log("Retrieved user email: " + email);
 
 			logger.log("Querying recycled images for user");
-			List<Map<String, AttributeValue>> recycledImages = findRecycledImages(userId, logger);
+			List<Map<String, AttributeValue>> recycledImages = findRecycledImages(email, logger);
 			logger.log("Found " + recycledImages.size() + " recycled images");
 
 			List<RecycledImage> formattedImages = recycledImages.stream()
@@ -53,14 +53,14 @@ public class GetAllRecycledImagesHandler implements RequestHandler<APIGatewayPro
 		}
 	}
 
-	private List<Map<String, AttributeValue>> findRecycledImages(String userId, LambdaLogger logger) {
-		logger.log("Scanning images table for recycled images of user: " + userId);
+	private List<Map<String, AttributeValue>> findRecycledImages(String email, LambdaLogger logger) {
+		logger.log("Scanning images table for recycled images of user: " + email);
 		ScanRequest scanRequest = ScanRequest.builder()
 				.tableName(imagesTable)
 				.filterExpression("isDeleted = :deletedFlag AND userId = :userId")
 				.expressionAttributeValues(Map.of(
 						":deletedFlag", AttributeValue.builder().bool(true).build(),
-						":userId", AttributeValue.builder().s(userId).build()
+						":email", AttributeValue.builder().s(email).build()
 				))
 				.build();
 
@@ -71,14 +71,15 @@ public class GetAllRecycledImagesHandler implements RequestHandler<APIGatewayPro
 	private String extractUserId(APIGatewayProxyRequestEvent input) {
 		String token = input.getHeaders().get("Authorization").replace("Bearer ", "");
 		Map<String, String> userDetails = TokenUtils.extractUserDetails(token);
-		return userDetails.get("userId");
+		return userDetails.get("email");
 	}
 
 	private RecycledImage convertToRecycledImage(Map<String, AttributeValue> item) {
 		return new RecycledImage(
 				item.get("imageId").s(),
 				item.get("recycledImageUrl").s(),
-				item.get("userId").s()
+				item.get("userId").s(),
+				item.get("email").s()
 		);
 	}
 
@@ -101,11 +102,13 @@ public class GetAllRecycledImagesHandler implements RequestHandler<APIGatewayPro
 		private String imageId;
 		private String recycledImageUrl;
 		private String userId;
+		private String email;
 
-		public RecycledImage(String imageId, String recycledImageUrl, String userId) {
+		public RecycledImage(String imageId, String recycledImageUrl, String userId,String email) {
 			this.imageId = imageId;
 			this.recycledImageUrl = recycledImageUrl;
 			this.userId = userId;
+			this.email=email;
 		}
 	}
 }

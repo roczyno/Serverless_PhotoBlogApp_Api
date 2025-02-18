@@ -47,3 +47,5 @@ O
 YPhotoBlogAppApi/src/main/java/com/roczyno/aws/photoblogapp/health/HealthCheckHandler.java,5\8\587c82f8b18b17b59d177e6c2a68cdf14aebdb39
 ‚
 RPhotoBlogAppApi/src/main/java/com/roczyno/aws/photoblogapp/dr/FailoverHandler.java,e\6\e6f137b51a2e740babc472da036525dfe473f77f
+•
+ePhotoBlogAppApi/src/main/java/com/roczyno/aws/photoblogapp/image/GetAllUserRecycledImagesHandler.java,7\3\7373037f570be28127eca576543c40e34e4a6334

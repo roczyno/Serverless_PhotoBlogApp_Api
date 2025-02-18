@@ -62,6 +62,7 @@ public class ImageProcessorHandler implements RequestHandler<SQSEvent, Void> {
 				String stagingKey = messageBody.get("stagingKey");
 				String userId = messageBody.get("userId");
 				String imageId = messageBody.get("imageId");
+				String email=messageBody.get("email");
 				String contentType = messageBody.get("contentType");
 
 				// Download image from staging bucket
@@ -78,6 +79,7 @@ public class ImageProcessorHandler implements RequestHandler<SQSEvent, Void> {
 				String firstName = metadata.get("firstname");
 				String lastName = metadata.get("lastname");
 				String fullName = firstName + " " + lastName;
+
 
 				// Process the image
 				InputStream imageInputStream = s3Client.getObject(getObjectRequest);
@@ -112,6 +114,7 @@ public class ImageProcessorHandler implements RequestHandler<SQSEvent, Void> {
 				item.put("userId", AttributeValue.builder().s(userId).build());
 				item.put("firstName", AttributeValue.builder().s(firstName).build());
 				item.put("lastName", AttributeValue.builder().s(lastName).build());
+				item.put("email",AttributeValue.builder().s(email).build());
 				item.put("imageUrl", AttributeValue.builder().s(imageUrl).build());
 				item.put("uploadDate", AttributeValue.builder().s(
 						LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)

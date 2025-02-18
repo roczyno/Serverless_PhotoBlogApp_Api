@@ -77,7 +77,8 @@ public class ImageUploadHandler implements RequestHandler<APIGatewayProxyRequest
 					new UserDetails(
 							userDetails.get("userId"),
 							userDetails.get("firstName"),
-							userDetails.get("lastName")
+							userDetails.get("lastName"),
+							userDetails.get("email")
 					),
 					stagingBucket,
 					processingQueue

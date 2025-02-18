@@ -48,7 +48,8 @@ public class ImageService {
 					.metadata(Map.of(
 							"userId", userDetails.userId(),
 							"firstName", userDetails.firstName(),
-							"lastName", userDetails.lastName()
+							"lastName", userDetails.lastName(),
+							"email", userDetails.email()
 					))
 					.build();
 
@@ -59,6 +60,7 @@ public class ImageService {
 			Map<String, Object> sqsMessage = Map.of(
 					"imageId", imageId,
 					"userId", userDetails.userId(),
+					"email",userDetails.email(),
 					"fileName", fileName,
 					"contentType", contentType,
 					"stagingBucket", stagingBucket,
