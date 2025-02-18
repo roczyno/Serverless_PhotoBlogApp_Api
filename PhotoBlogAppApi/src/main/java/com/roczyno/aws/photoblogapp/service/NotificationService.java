@@ -8,7 +8,9 @@ import software.amazon.awssdk.services.sns.model.MessageAttributeValue;
 import software.amazon.awssdk.services.sns.model.PublishRequest;
 import software.amazon.awssdk.services.sns.model.SubscribeRequest;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -21,28 +23,31 @@ public class NotificationService {
 	}
 
 
-	public void subscribeToLoginNotification(String email, String snsTopicArn){
+	public void subscribeToLoginNotification(String email, String snsTopicArn) {
+		try {
+			// Create a filter policy with the correct structure
+			Map<String, List<String>> filterPolicy = new HashMap<>();
+			filterPolicy.put("email", Collections.singletonList(email));
 
-		try{
-
-			Map<String,String> filterPolicy= new HashMap<>();
-			filterPolicy.put("email",email);
-
-			SubscribeRequest request=SubscribeRequest.builder()
+			// Create the subscription request
+			SubscribeRequest request = SubscribeRequest.builder()
 					.protocol("email")
 					.endpoint(email)
 					.returnSubscriptionArn(true)
-					.attributes(Map.of("FilterPolicy", new ObjectMapper().writeValueAsString(filterPolicy)))
+					.attributes(Map.of(
+							"FilterPolicy", new ObjectMapper()
+									.writeValueAsString(filterPolicy)
+					))
 					.topicArn(snsTopicArn)
 					.build();
+
 			snsClient.subscribe(request);
+			log.info("Successfully subscribed user {} to notifications", email);
 
-
-		}catch (Exception e){
-			log.error("Failed to subscribe user to notifications: {}", e.getMessage());
-
+		} catch (Exception e) {
+			log.error("Failed to subscribe user to notifications: {}", e.getMessage(), e);
+			throw new RuntimeException("Failed to subscribe to notifications", e);
 		}
-
 	}
 
 	public void sendLoginNotification(String email,String snsTopicArn){
