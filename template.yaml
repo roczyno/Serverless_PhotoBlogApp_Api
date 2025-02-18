@@ -774,4 +774,3 @@ Outputs:
   ApiId:
     Description: "API Gateway ID"
     Value: !Ref MyApi
-
