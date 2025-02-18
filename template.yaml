@@ -184,6 +184,7 @@ Resources:
                 - cognito-idp:SignUp
                 - cognito-idp:ConfirmSignUp
                 - cognito-idp:AdminCreateUser
+                - cognito-idp:AdminConfirmSignUp
               Resource: !GetAtt PhotoBlogAppUserPool.Arn
             - Effect: Allow
               Action:
@@ -207,20 +208,7 @@ Resources:
               Authorizer: NONE
 
 
-  ConfirmUserHandlerFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: PhotoBlogAppApi
-      Handler: com.roczyno.aws.photoblogapp.auth.ConfirmUserHandler::handleRequest
-      Events:
-        LoginUser:
-          Type: Api
-          Properties:
-            Path: /confirm
-            Method: post
-            RestApiId: !Ref MyApi
-            Auth:
-              Authorizer: NONE
+
 
 
 

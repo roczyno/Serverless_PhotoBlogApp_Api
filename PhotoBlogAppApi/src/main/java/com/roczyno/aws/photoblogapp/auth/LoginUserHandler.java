@@ -14,6 +14,8 @@ import com.roczyno.aws.photoblogapp.exceptions.ErrorResponse;
 import com.roczyno.aws.photoblogapp.service.CognitoUserService;
 import com.roczyno.aws.photoblogapp.service.NotificationService;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 
 import java.util.Map;
 
@@ -22,6 +24,14 @@ public class LoginUserHandler implements RequestHandler<APIGatewayProxyRequestEv
 	private final String appClientId;
 	private final String appClientSecret;
 	private final String snsTopicArn;
+
+	CognitoIdentityProviderClient primaryCognitoClient = CognitoIdentityProviderClient.builder()
+			.region(Region.of("eu-west-1"))
+			.build();
+
+	CognitoIdentityProviderClient secondaryCognitoClient = CognitoIdentityProviderClient.builder()
+			.region(Region.of("eu-central-1"))
+			.build();
 
 	private static final Map<String, String> CORS_HEADERS = Map.of(
 			"Content-Type", "application/json",
@@ -34,8 +44,10 @@ public class LoginUserHandler implements RequestHandler<APIGatewayProxyRequestEv
 		this.snsTopicArn = System.getenv("PB_LOGIN_TOPIC");
 		this.appClientId = System.getenv("PB_COGNITO_POOL_CLIENT_ID");
 		this.appClientSecret = System.getenv("PB_COGNITO_POOL_SECRET_ID");
-		this.cognitoUserService = new CognitoUserService(System.getenv("AWS_REGION"),
-				AwsConfig.cognitoIdentityProviderClient(),new NotificationService(AwsConfig.snsClient()));
+		this.cognitoUserService = new CognitoUserService(primaryCognitoClient,secondaryCognitoClient,
+				new NotificationService(AwsConfig.snsClient()),"snodf6mci6tu8sqavqff4te35",
+				"mbvfiscbf0fihrfafpapr4d4d211t8808lu52gmofkhdctvree5","2pcn0l10dudev2l16cqad19vn3",
+				"m3f42v78ids1uqjj633ca0vc8hhj9jv5pcad54aofdh1395jhhh","eu-west-1_6bJny9B0G","eu-central-1_EvOxPU1Im");
 	}
 
 	@Override
@@ -47,7 +59,7 @@ public class LoginUserHandler implements RequestHandler<APIGatewayProxyRequestEv
 
 		try{
 			JsonObject loginUserRequest= JsonParser.parseString(input.getBody()).getAsJsonObject();
-			JsonObject loginResult=cognitoUserService.userLogin(loginUserRequest,appClientId,appClientSecret,snsTopicArn);
+			JsonObject loginResult=cognitoUserService.userLogin(loginUserRequest,snsTopicArn);
 			response.withBody(new Gson().toJson(loginResult,JsonObject.class));
 			response.withStatusCode(200);
 

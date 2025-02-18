@@ -3,6 +3,8 @@ package com.roczyno.aws.photoblogapp.service;
 import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminConfirmSignUpRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminConfirmSignUpResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AttributeType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthFlowType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
@@ -18,7 +20,7 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.SignUpRespo
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
@@ -27,119 +29,251 @@ import java.util.UUID;
 
 @Slf4j
 public class CognitoUserService {
-	private final CognitoIdentityProviderClient cognitoIdentityProviderClient;
-
+	private final CognitoIdentityProviderClient primaryCognitoClient;
+	private final CognitoIdentityProviderClient secondaryCognitoClient;
 	private final NotificationService notificationService;
+	private final String primaryClientId;
+	private final String primaryClientSecret;
+	private final String secondaryClientId;
+	private final String secondaryClientSecret;
+	private final String primaryUserPoolId;    // Added for admin confirmation
+	private final String secondaryUserPoolId;  // Added for admin confirmation
 
-	public CognitoUserService(String region, CognitoIdentityProviderClient cognitoIdentityProviderClient, NotificationService notificationService) {
-		this.cognitoIdentityProviderClient = cognitoIdentityProviderClient;
+	public CognitoUserService(
+			CognitoIdentityProviderClient primaryCognitoClient,
+			CognitoIdentityProviderClient secondaryCognitoClient,
+			NotificationService notificationService,
+			String primaryClientId,
+			String primaryClientSecret,
+			String secondaryClientId,
+			String secondaryClientSecret,
+			String primaryUserPoolId,         // New parameter
+			String secondaryUserPoolId) {     // New parameter
+		this.primaryCognitoClient = primaryCognitoClient;
+		this.secondaryCognitoClient = secondaryCognitoClient;
 		this.notificationService = notificationService;
+		this.primaryClientId = primaryClientId;
+		this.primaryClientSecret = primaryClientSecret;
+		this.secondaryClientId = secondaryClientId;
+		this.secondaryClientSecret = secondaryClientSecret;
+		this.primaryUserPoolId = primaryUserPoolId;
+		this.secondaryUserPoolId = secondaryUserPoolId;
 	}
 
-	public JsonObject register(JsonObject user,String appClientId,String appClientSecret,String snsTopicArn){
+	public JsonObject register(JsonObject user, String snsTopicArn) {
+		String email = user.get("email").getAsString();
+		String password = user.get("password").getAsString();
+		String firstName = user.get("firstName").getAsString();
+		String lastName = user.get("lastName").getAsString();
+		String userId = UUID.randomUUID().toString();
 
-		String email=user.get("email").getAsString();
-		String password=user.get("password").getAsString();
-		String firstName=user.get("firstName").getAsString();
-		String lastName=user.get("lastName").getAsString();
-		String userId= UUID.randomUUID().toString();
+		// Create Cognito attributes
+		List<AttributeType> attributes = createUserAttributes(userId, email, firstName, lastName);
 
-		AttributeType attributeUserId=AttributeType.builder()
-				.name("custom:userId")
-				.value(userId)
-				.build();
-		AttributeType emailAttribute=AttributeType.builder()
-				.name("email")
-				.value(email)
-				.build();
-		AttributeType nameAttribute=AttributeType.builder()
-				.name("name")
-				.value(firstName+" "+lastName)
-				.build();
+		// Register in primary region
+		SignUpResponse primaryResponse = registerInCognitoPool(
+				email,
+				password,
+				attributes,
+				primaryClientId,
+				primaryClientSecret,
+				primaryCognitoClient
+		);
 
-		List<AttributeType> attributes=new ArrayList<>();
-		attributes.add(nameAttribute);
-		attributes.add(emailAttribute);
-		attributes.add(attributeUserId);
+		// Auto-confirm in primary region
+		AdminConfirmSignUpResponse primaryConfirmResponse = adminConfirmUser(
+				email,
+				primaryUserPoolId,
+				primaryCognitoClient
+		);
 
+		// Register in secondary region
+		SignUpResponse secondaryResponse = registerInCognitoPool(
+				email,
+				password,
+				attributes,
+				secondaryClientId,
+				secondaryClientSecret,
+				secondaryCognitoClient
+		);
 
+		// Auto-confirm in secondary region
+		AdminConfirmSignUpResponse secondaryConfirmResponse = adminConfirmUser(
+				email,
+				secondaryUserPoolId,
+				secondaryCognitoClient
+		);
 
-		String generateSecretHash=calculateSecretHash(appClientId,appClientSecret,email);
-		SignUpRequest signUpRequest= SignUpRequest.builder()
-				.username(email)
-				.password(password)
-				.userAttributes(attributes)
-				.clientId(appClientId)
-				.secretHash(generateSecretHash)
-				.build();
+		// Create response
+		JsonObject createUserResult = new JsonObject();
+		boolean isSuccessful = primaryResponse.sdkHttpResponse().isSuccessful() &&
+				secondaryResponse.sdkHttpResponse().isSuccessful() &&
+				primaryConfirmResponse.sdkHttpResponse().isSuccessful() &&
+				secondaryConfirmResponse.sdkHttpResponse().isSuccessful();
 
-		SignUpResponse signUpResponse=cognitoIdentityProviderClient.signUp(signUpRequest);
-		JsonObject createUserResult= new JsonObject();
-		createUserResult.addProperty("isSuccessful",signUpResponse.sdkHttpResponse().isSuccessful());
-		createUserResult.addProperty("statusCode",signUpResponse.sdkHttpResponse().statusCode());
-		createUserResult.addProperty("cognitoUserId",signUpResponse.userSub());
-		createUserResult.addProperty("isConfirmed",signUpResponse.userConfirmed());
+		createUserResult.addProperty("isSuccessful", isSuccessful);
+		createUserResult.addProperty("primaryRegionStatus", primaryResponse.sdkHttpResponse().statusCode());
+		createUserResult.addProperty("secondaryRegionStatus", secondaryResponse.sdkHttpResponse().statusCode());
+		createUserResult.addProperty("cognitoUserId", primaryResponse.userSub());
+		createUserResult.addProperty("isConfirmed", true);  // Always true now
+		createUserResult.addProperty("userId", userId);
 
-		if(signUpResponse.sdkHttpResponse().isSuccessful()){
-			notificationService.subscribeToLoginNotification(email,snsTopicArn);
+		if (isSuccessful) {
+			notificationService.subscribeToLoginNotification(email, snsTopicArn);
 		}
 
 		return createUserResult;
 	}
 
+	private AdminConfirmSignUpResponse adminConfirmUser(
+			String email,
+			String userPoolId,
+			CognitoIdentityProviderClient cognitoClient) {
+
+		AdminConfirmSignUpRequest confirmRequest = AdminConfirmSignUpRequest.builder()
+				.userPoolId(userPoolId)
+				.username(email)
+				.build();
+
+		try {
+			return cognitoClient.adminConfirmSignUp(confirmRequest);
+		} catch (Exception e) {
+			log.error("Failed to confirm user in Cognito pool", e);
+			throw e;
+		}
+	}
 
 
+	private List<AttributeType> createUserAttributes(String userId, String email, String firstName, String lastName) {
+		AttributeType attributeUserId = AttributeType.builder()
+				.name("custom:userId")
+				.value(userId)
+				.build();
+		AttributeType emailAttribute = AttributeType.builder()
+				.name("email")
+				.value(email)
+				.build();
+		AttributeType nameAttribute = AttributeType.builder()
+				.name("name")
+				.value(firstName + " " + lastName)
+				.build();
 
-	public JsonObject userLogin(JsonObject loginDetails, String appClientId, String appClientSecret,String snsTopicArn) {
+		return Arrays.asList(attributeUserId, emailAttribute, nameAttribute);
+	}
+
+	private SignUpResponse registerInCognitoPool(
+			String email,
+			String password,
+			List<AttributeType> attributes,
+			String clientId,
+			String clientSecret,
+			CognitoIdentityProviderClient cognitoClient) {
+
+		String secretHash = calculateSecretHash(clientId, clientSecret, email);
+		SignUpRequest signUpRequest = SignUpRequest.builder()
+				.username(email)
+				.password(password)
+				.userAttributes(attributes)
+				.clientId(clientId)
+				.secretHash(secretHash)
+				.build();
+
+		try {
+			return cognitoClient.signUp(signUpRequest);
+		} catch (Exception e) {
+			log.error("Failed to register user in Cognito pool", e);
+			throw e;
+		}
+	}
+
+	public JsonObject userLogin(JsonObject loginDetails, String snsTopicArn) {
 		String email = loginDetails.get("email").getAsString();
-		String generateSecretHash = calculateSecretHash(appClientId, appClientSecret, email);
 		String password = loginDetails.get("password").getAsString();
-		Map<String, String> authParams = new HashMap<>() {
-			{
-				put("USERNAME", email);
-				put("PASSWORD", password);
-				put("SECRET_HASH", generateSecretHash);
-			}
-		};
+
+		try {
+			// Try primary region first
+			return authenticateUser(
+					email,
+					password,
+					primaryClientId,
+					primaryClientSecret,
+					primaryCognitoClient,
+					snsTopicArn,
+					false
+			);
+		} catch (Exception e) {
+			log.warn("Primary region authentication failed, trying secondary region", e);
+
+			// Try secondary region if primary fails
+			return authenticateUser(
+					email,
+					password,
+					secondaryClientId,
+					secondaryClientSecret,
+					secondaryCognitoClient,
+					snsTopicArn,
+					true
+			);
+		}
+	}
+
+	private JsonObject authenticateUser(
+			String email,
+			String password,
+			String clientId,
+			String clientSecret,
+			CognitoIdentityProviderClient cognitoClient,
+			String snsTopicArn,
+			boolean isFailover) {
+
+		String secretHash = calculateSecretHash(clientId, clientSecret, email);
+		Map<String, String> authParams = new HashMap<>();
+		authParams.put("USERNAME", email);
+		authParams.put("PASSWORD", password);
+		authParams.put("SECRET_HASH", secretHash);
+
 		InitiateAuthRequest authRequest = InitiateAuthRequest.builder()
-				.clientId(appClientId)
+				.clientId(clientId)
 				.authFlow(AuthFlowType.USER_PASSWORD_AUTH)
 				.authParameters(authParams)
 				.build();
 
-		InitiateAuthResponse initiateAuthResponse = cognitoIdentityProviderClient.initiateAuth(authRequest);
-		AuthenticationResultType authenticationResultType = initiateAuthResponse.authenticationResult();
-		JsonObject loginUserResponse = new JsonObject();
-		loginUserResponse.addProperty("isSuccessful", initiateAuthResponse.sdkHttpResponse().isSuccessful());
-		loginUserResponse.addProperty("statusCode", initiateAuthResponse.sdkHttpResponse().statusCode());
-		loginUserResponse.addProperty("idToken", authenticationResultType.idToken());
-		loginUserResponse.addProperty("accessToken", authenticationResultType.accessToken());
-		loginUserResponse.addProperty("refreshToken", authenticationResultType.refreshToken());
+		InitiateAuthResponse authResponse = cognitoClient.initiateAuth(authRequest);
+		AuthenticationResultType authResult = authResponse.authenticationResult();
 
-		// Get user details using the access token
+		// Get user details
 		GetUserRequest getUserRequest = GetUserRequest.builder()
-				.accessToken(authenticationResultType.accessToken())
+				.accessToken(authResult.accessToken())
 				.build();
-		GetUserResponse getUserResponse = cognitoIdentityProviderClient.getUser(getUserRequest);
+		GetUserResponse getUserResponse = cognitoClient.getUser(getUserRequest);
 
-		// Create user details object
+		JsonObject loginResponse = new JsonObject();
+		loginResponse.addProperty("isSuccessful", authResponse.sdkHttpResponse().isSuccessful());
+		loginResponse.addProperty("statusCode", authResponse.sdkHttpResponse().statusCode());
+		loginResponse.addProperty("idToken", authResult.idToken());
+		loginResponse.addProperty("accessToken", authResult.accessToken());
+		loginResponse.addProperty("refreshToken", authResult.refreshToken());
+		loginResponse.addProperty("isFailoverMode", isFailover);
+
+		// Add user details
 		JsonObject userDetails = new JsonObject();
-		getUserResponse.userAttributes().forEach(attribute -> {
-			userDetails.addProperty(attribute.name(), attribute.value());
-		});
+		getUserResponse.userAttributes().forEach(attribute ->
+				userDetails.addProperty(attribute.name(), attribute.value())
+		);
+		loginResponse.add("user", userDetails);
 
-		// Add user details to response
-		loginUserResponse.add("user", userDetails);
-
-
-		if(initiateAuthResponse.sdkHttpResponse().isSuccessful()){
-			notificationService.sendLoginNotification(email,snsTopicArn);
+		if (authResponse.sdkHttpResponse().isSuccessful()) {
+			notificationService.sendLoginNotification(email, snsTopicArn);
 		}
 
-		return loginUserResponse;
+		return loginResponse;
 	}
 
-	public static String calculateSecretHash(String userPoolClientId, String userPoolClientSecret, String userName) {
+
+
+
+
+	private static String calculateSecretHash(String userPoolClientId, String userPoolClientSecret, String userName) {
 		final String HMAC_SHA256_ALGORITHM = "HmacSHA256";
 
 		SecretKeySpec signingKey = new SecretKeySpec(
@@ -152,24 +286,7 @@ public class CognitoUserService {
 			byte[] rawHmac = mac.doFinal(userPoolClientId.getBytes(StandardCharsets.UTF_8));
 			return Base64.getEncoder().encodeToString(rawHmac);
 		} catch (Exception e) {
-			throw new RuntimeException("Error while calculating ");
+			throw new RuntimeException("Error while calculating secret hash", e);
 		}
 	}
-
-	public JsonObject confirmUserSignUp(String appClientId,String appClientSecret,String email,String confirmationCode){
-		String generateSecretHash=calculateSecretHash(appClientId,appClientSecret,email);
-		ConfirmSignUpRequest confirmSignUpRequest=ConfirmSignUpRequest.builder()
-				.secretHash(generateSecretHash)
-				.username(email)
-				.confirmationCode(confirmationCode)
-				.clientId(appClientId)
-				.build();
-
-		ConfirmSignUpResponse confirmSignUpResponse=cognitoIdentityProviderClient.confirmSignUp(confirmSignUpRequest);
-		JsonObject confirmUserResponse=new JsonObject();
-		confirmUserResponse.addProperty("isSuccessful",confirmSignUpResponse.sdkHttpResponse().isSuccessful());
-		confirmUserResponse.addProperty("statusCode",confirmSignUpResponse.sdkHttpResponse().statusCode());
-		return confirmUserResponse;
-	}
-
 }

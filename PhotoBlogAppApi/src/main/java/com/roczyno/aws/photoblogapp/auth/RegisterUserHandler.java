@@ -14,6 +14,8 @@ import com.roczyno.aws.photoblogapp.exceptions.ErrorResponse;
 import com.roczyno.aws.photoblogapp.service.CognitoUserService;
 import com.roczyno.aws.photoblogapp.service.NotificationService;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 
 import java.util.Map;
 
@@ -30,12 +32,21 @@ public class RegisterUserHandler implements RequestHandler<APIGatewayProxyReques
 			"Access-Control-Allow-Headers", "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token"
 	);
 
+	CognitoIdentityProviderClient primaryCognitoClient = CognitoIdentityProviderClient.builder()
+			.region(Region.of("eu-west-1"))
+			.build();
+
+	CognitoIdentityProviderClient secondaryCognitoClient = CognitoIdentityProviderClient.builder()
+			.region(Region.of("eu-central-1"))
+			.build();
 	public RegisterUserHandler() {
 		this.snsTopicArn = System.getenv("PB_LOGIN_TOPIC");
 		this.appClientId = System.getenv("PB_COGNITO_POOL_CLIENT_ID");
 		this.appClientSecret = System.getenv("PB_COGNITO_POOL_SECRET_ID");
-		this.cognitoUserService = new CognitoUserService(System.getenv("AWS_REGION"),
-				AwsConfig.cognitoIdentityProviderClient(),new NotificationService(AwsConfig.snsClient()));
+		this.cognitoUserService = new CognitoUserService(primaryCognitoClient,secondaryCognitoClient,
+				new NotificationService(AwsConfig.snsClient()),"snodf6mci6tu8sqavqff4te35",
+				"mbvfiscbf0fihrfafpapr4d4d211t8808lu52gmofkhdctvree5","2pcn0l10dudev2l16cqad19vn3",
+				"m3f42v78ids1uqjj633ca0vc8hhj9jv5pcad54aofdh1395jhhh","eu-west-1_6bJny9B0G","eu-central-1_EvOxPU1Im");
 	}
 
 	@Override
@@ -47,7 +58,7 @@ public class RegisterUserHandler implements RequestHandler<APIGatewayProxyReques
 
 		try{
 			JsonObject registerRequest= JsonParser.parseString(input.getBody()).getAsJsonObject();
-			JsonObject registerResult=cognitoUserService.register(registerRequest,appClientId,appClientSecret,snsTopicArn);
+			JsonObject registerResult=cognitoUserService.register(registerRequest,snsTopicArn);
 			response.withBody(new Gson().toJson(registerResult,JsonObject.class));
 			response.withStatusCode(200);
 

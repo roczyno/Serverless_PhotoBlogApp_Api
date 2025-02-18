@@ -7,7 +7,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.sfn.SfnClient;
@@ -19,11 +18,7 @@ public class AwsConfig {
 
 	private static final String awsRegion = System.getenv("AWS_REGION");
 
-	public static CognitoIdentityProviderClient cognitoIdentityProviderClient(){
-		return CognitoIdentityProviderClient.builder()
-				.region(Region.of(awsRegion))
-				.build();
-	}
+
 	@Bean
 	public static SqsClient sqsClient() {
 		return SqsClient.builder()
