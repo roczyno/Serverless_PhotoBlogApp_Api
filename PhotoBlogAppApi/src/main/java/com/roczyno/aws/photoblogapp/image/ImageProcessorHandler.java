@@ -109,6 +109,10 @@ public class ImageProcessorHandler implements RequestHandler<SQSEvent, Void> {
 				String imageUrl = String.format("https://%s.s3.amazonaws.com/%s", primaryBucket, primaryKey);
 
 				// Store in DynamoDB
+				logger.log("starting to upload image details to dynamo db");
+				try {
+
+
 				Map<String, AttributeValue> item = new HashMap<>();
 				item.put("imageId", AttributeValue.builder().s(imageId).build());
 				item.put("userId", AttributeValue.builder().s(userId).build());
@@ -126,6 +130,10 @@ public class ImageProcessorHandler implements RequestHandler<SQSEvent, Void> {
 						.build();
 
 				dynamoDbClient.putItem(putItemRequest);
+				}catch (Exception e){
+					logger.log(String.format("Failed to upload object from to table %s with id %s. Error: %s",
+							imagesTable, imageId, e.getMessage()));
+				}
 
 				logger.log(String.format("Successfully processed image %s for user %s", imageId, userId));
 
