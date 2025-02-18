@@ -24,6 +24,12 @@ public class GetUserImagesHandler implements RequestHandler<APIGatewayProxyReque
 	private final DynamoDbClient dynamoDbClient;
 	private final ObjectMapper objectMapper;
 	private final String imagesTable;
+	private static final Map<String, String> CORS_HEADERS = Map.of(
+			"Content-Type", "application/json",
+			"Access-Control-Allow-Origin", "*",
+			"Access-Control-Allow-Methods", "POST",
+			"Access-Control-Allow-Headers", "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token"
+	);
 
 	public GetUserImagesHandler() {
 		this.dynamoDbClient = AwsConfig.dynamoDbClient();
@@ -37,8 +43,19 @@ public class GetUserImagesHandler implements RequestHandler<APIGatewayProxyReque
 
 	@Override
 	public APIGatewayProxyResponseEvent handleRequest(APIGatewayProxyRequestEvent input, Context context) {
+		if ("OPTIONS".equals(input.getHttpMethod())) {
+			return new APIGatewayProxyResponseEvent()
+					.withStatusCode(200)
+					.withHeaders(Map.of(
+							"Access-Control-Allow-Origin", "http://localhost:5173",
+							"Access-Control-Allow-Headers", "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Requested-With",
+							"Access-Control-Allow-Methods", "POST,OPTIONS",
+							"Access-Control-Max-Age", "3600"
+					));
+		}
 		LambdaLogger logger = context.getLogger();
 		APIGatewayProxyResponseEvent response = new APIGatewayProxyResponseEvent();
+		response.withHeaders(CORS_HEADERS);
 
 		try {
 			if (input.getHeaders() == null || !input.getHeaders().containsKey("Authorization")) {

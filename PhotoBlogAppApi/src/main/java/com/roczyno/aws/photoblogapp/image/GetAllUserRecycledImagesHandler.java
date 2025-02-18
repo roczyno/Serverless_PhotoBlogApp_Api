@@ -28,6 +28,16 @@ public class GetAllUserRecycledImagesHandler implements RequestHandler<APIGatewa
 	@Override
 	public APIGatewayProxyResponseEvent handleRequest(APIGatewayProxyRequestEvent input, Context context) {
 		LambdaLogger logger = context.getLogger();
+		if ("OPTIONS".equals(input.getHttpMethod())) {
+			return new APIGatewayProxyResponseEvent()
+					.withStatusCode(200)
+					.withHeaders(Map.of(
+							"Access-Control-Allow-Origin", "http://localhost:5173",
+							"Access-Control-Allow-Headers", "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Requested-With",
+							"Access-Control-Allow-Methods", "POST,OPTIONS",
+							"Access-Control-Max-Age", "3600"
+					));
+		}
 
 		try {
 			logger.log("Extracting user email from authentication token");
@@ -91,6 +101,7 @@ public class GetAllUserRecycledImagesHandler implements RequestHandler<APIGatewa
 	}
 
 	private APIGatewayProxyResponseEvent createErrorResponse(Exception e) {
+
 		APIGatewayProxyResponseEvent response = new APIGatewayProxyResponseEvent();
 		response.setStatusCode(500);
 		response.setBody("Error: " + e.getMessage());
