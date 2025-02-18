@@ -55,19 +55,10 @@ Resources:
     Type: AWS::Cognito::UserPool
     Properties:
       UserPoolName: PhotoBlogUserPool
-      AccountRecoverySetting:
-        RecoveryMechanisms:
-          - Name: verified_email
-            Priority: 1
       AdminCreateUserConfig:
         AllowAdminCreateUserOnly: false
-        InviteMessageTemplate:
-          EmailMessage: "Hello {username}, your verification code is {####}. Please use this code to verify your email and complete your registration."
-          EmailSubject: "Verify your email for PhotoBlogApp"
       EmailConfiguration:
         EmailSendingAccount: COGNITO_DEFAULT
-      AutoVerifiedAttributes:
-        - email
       Policies:
         PasswordPolicy:
           MinimumLength: 8

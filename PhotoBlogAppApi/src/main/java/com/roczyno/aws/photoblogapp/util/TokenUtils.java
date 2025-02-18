@@ -67,6 +67,13 @@ public class TokenUtils {
 			}
 			userDetails.put("userId", userId);
 
+			// Get email
+			String email = claimsSet.getStringClaim("email");
+			if (email == null || email.trim().isEmpty()) {
+				throw new SecurityException("Token missing required email claim", null);
+			}
+			userDetails.put("email", email);
+
 			// Get full name
 			String fullName = claimsSet.getStringClaim("name");
 			if (fullName != null && !fullName.trim().isEmpty()) {

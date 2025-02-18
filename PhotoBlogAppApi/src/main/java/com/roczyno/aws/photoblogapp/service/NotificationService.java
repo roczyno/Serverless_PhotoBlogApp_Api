@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.sns.SnsClient;
 import software.amazon.awssdk.services.sns.model.MessageAttributeValue;
 import software.amazon.awssdk.services.sns.model.PublishRequest;
+import software.amazon.awssdk.services.sns.model.PublishResponse;
 import software.amazon.awssdk.services.sns.model.SubscribeRequest;
 
 import java.util.Collections;
@@ -50,24 +51,32 @@ public class NotificationService {
 		}
 	}
 
-	public void sendLoginNotification(String email,String snsTopicArn){
-		String message = String.format("New login detected for user: %s at %s",
-				email,
-				java.time.LocalDateTime.now());
+	public void sendLoginNotification(String email, String snsTopicArn) {
+		try {
+			String message = String.format("New login detected for user: %s at %s",
+					email,
+					java.time.LocalDateTime.now());
 
-		Map<String, MessageAttributeValue> messageAttributes = new HashMap<>();
+			Map<String, MessageAttributeValue> messageAttributes = new HashMap<>();
 
+			// Use "email" to match the filter policy key
+			messageAttributes.put("email", MessageAttributeValue.builder()
+					.dataType("String")
+					.stringValue(email)
+					.build());
 
-		messageAttributes.put("notificationType", software.amazon.awssdk.services.sns.model.MessageAttributeValue.builder()
-				.dataType("String")
-				.stringValue(email)
-				.build());
-		PublishRequest request = PublishRequest.builder()
-				.message(message)
-				.messageAttributes(messageAttributes)
-				.topicArn(snsTopicArn)
-				.build();
+			PublishRequest request = PublishRequest.builder()
+					.message(message)
+					.messageAttributes(messageAttributes)
+					.topicArn(snsTopicArn)
+					.build();
 
-		snsClient.publish(request);
+			PublishResponse response = snsClient.publish(request);
+			log.info("Successfully sent login notification. MessageId: {}", response.messageId());
+
+		} catch (Exception e) {
+			log.error("Failed to send login notification: {}", e.getMessage(), e);
+			throw new RuntimeException("Failed to send login notification", e);
+		}
 	}
 }
