@@ -280,7 +280,7 @@ Resources:
         - S3CrudPolicy:
             BucketName: !If [IsPrimary, !Ref PrimaryBucket, !Sub "photoblogapp-primary-bucket-${PrimaryRegion}"]
         - DynamoDBCrudPolicy:
-            TableName: !Ref ImagesTable
+            TableName: "photoblogapp-images"
         - SNSPublishMessagePolicy:
             TopicName: !GetAtt ImageProcessingFailureNotificationTopic.TopicName
         - SQSPollerPolicy:
@@ -296,7 +296,7 @@ Resources:
       Environment:
         Variables:
           PB_PRIMARY_BUCKET: !If [IsPrimary, !Ref PrimaryBucket, !Sub "photoblogapp-primary-bucket-${PrimaryRegion}"]
-          PB_IMAGES_TABLE: !Ref ImagesTable
+          PB_IMAGES_TABLE: "photoblogapp-images"
           PB_FAILURE_NOTIFICATION_TOPIC: !Ref ImageProcessingFailureNotificationTopic
 
       Events:
@@ -313,7 +313,7 @@ Resources:
       Handler: com.roczyno.aws.photoblogapp.image.GetAllImagesHandler::handleRequest
       Policies:
         - DynamoDBReadPolicy:
-            TableName: !Ref ImagesTable
+            TableName: "photoblogapp-images"
         - Statement:
             - Effect: Allow
               Action:
@@ -324,7 +324,7 @@ Resources:
                 - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*"
       Environment:
         Variables:
-          PB_IMAGES_TABLE: !Ref ImagesTable
+          PB_IMAGES_TABLE: "photoblogapp-images"
       Events:
         ApiEvent:
           Type: Api
@@ -342,7 +342,7 @@ Resources:
       Handler: com.roczyno.aws.photoblogapp.image.GetUserImagesHandler::handleRequest
       Policies:
         - DynamoDBReadPolicy:
-            TableName: !Ref ImagesTable
+            TableName: "photoblogapp-images"
         - Statement:
             - Effect: Allow
               Action:
@@ -353,7 +353,7 @@ Resources:
                 - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*"
       Environment:
         Variables:
-          PB_IMAGES_TABLE: !Ref ImagesTable
+          PB_IMAGES_TABLE: "photoblogapp-images"
       Events:
         ApiEvent:
           Type: Api
@@ -373,7 +373,7 @@ Resources:
       Handler: com.roczyno.aws.photoblogapp.image.ShareImageHandler::handleRequest
       Policies:
         - DynamoDBReadPolicy:
-            TableName: !Ref ImagesTable
+            TableName: "photoblogapp-images"
         - S3ReadPolicy:
             BucketName: !If [IsPrimary, !Ref PrimaryBucket, !Sub "photoblogapp-primary-bucket-${PrimaryRegion}"]
         - Statement:
@@ -387,7 +387,7 @@ Resources:
       Environment:
         Variables:
           PRIMARY_BUCKET: !If [IsPrimary, !Ref PrimaryBucket, !Sub "photoblogapp-primary-bucket-${PrimaryRegion}"]
-          IMAGES_TABLE: !Ref ImagesTable
+          IMAGES_TABLE: "photoblogapp-images"
       Events:
         ShareImage:
           Type: Api
@@ -407,7 +407,7 @@ Resources:
         - S3CrudPolicy:
             BucketName: !If [IsPrimary, !Ref PrimaryBucket, !Sub "photoblogapp-primary-bucket-${PrimaryRegion}"]
         - DynamoDBCrudPolicy:
-            TableName: !Ref ImagesTable
+            TableName: "photoblogapp-images"
         - Statement:
             - Effect: Allow
               Action:
@@ -419,7 +419,7 @@ Resources:
       Environment:
         Variables:
           PB_PRIMARY_BUCKET: !If [IsPrimary, !Ref PrimaryBucket, !Sub "photoblogapp-primary-bucket-${PrimaryRegion}"]
-          PB_IMAGES_TABLE: !Ref ImagesTable
+          PB_IMAGES_TABLE: "photoblogapp-images"
       Events:
         MoveToRecycleBin:
           Type: Api
@@ -455,7 +455,7 @@ Resources:
       Handler: com.roczyno.aws.photoblogapp.image.GetAllUserRecycledImagesHandler::handleRequest
       Policies:
         - DynamoDBCrudPolicy:
-            TableName: !Ref ImagesTable
+            TableName: "photoblogapp-images"
         - Statement:
             - Effect: Allow
               Action:
@@ -466,7 +466,7 @@ Resources:
                 - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*"
       Environment:
         Variables:
-          PB_IMAGES_TABLE: !Ref ImagesTable
+          PB_IMAGES_TABLE: "photoblogapp-images"
       Events:
         GetRecycledImages:
           Type: Api
@@ -629,6 +629,7 @@ Resources:
 
   ImagesTable:
     Type: AWS::DynamoDB::GlobalTable
+    Condition: IsPrimary
     Properties:
       TableName: "photoblogapp-images"
       BillingMode: PAY_PER_REQUEST
