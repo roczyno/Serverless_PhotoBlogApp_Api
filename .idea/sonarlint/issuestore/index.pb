@@ -17,8 +17,6 @@ XPhotoBlogAppApi/src/main/java/com/roczyno/aws/photoblogapp/exceptions/ErrorResp
 ZPhotoBlogAppApi/src/main/java/com/roczyno/aws/photoblogapp/PhotoBlogAppApiApplication.java,3\b\3bcd2ff5802f88b187e79a9fe09b31176edef86a
 …
 UPhotoBlogAppApi/src/main/java/com/roczyno/aws/photoblogapp/auth/LoginUserHandler.java,3\0\307e803cd341b1b2015a1aec2cc0744099d547be
-‡
-WPhotoBlogAppApi/src/main/java/com/roczyno/aws/photoblogapp/auth/ConfirmUserHandler.java,1\4\14c28a6b80035df93c0b8d841be9e82613839463
 ˆ
 XPhotoBlogAppApi/src/main/java/com/roczyno/aws/photoblogapp/auth/RegisterUserHandler.java,a\b\abba87261ee5c4673a96b1d9bbdb04dfee16d583
 „
@@ -39,8 +37,6 @@ YPhotoBlogAppApi/src/main/java/com/roczyno/aws/photoblogapp/image/GetAllImagesHa
 ZPhotoBlogAppApi/src/main/java/com/roczyno/aws/photoblogapp/image/GetUserImagesHandler.java,1\8\18e3d4a3489821d9d74b4def9c3e90e54790494b
 ‹
 [PhotoBlogAppApi/src/main/java/com/roczyno/aws/photoblogapp/image/ImageRecyclingHandler.java,0\c\0cd38f46a4b2178bbfdc3f7583b7be7a3148c624
-‘
-aPhotoBlogAppApi/src/main/java/com/roczyno/aws/photoblogapp/image/GetAllRecycledImagesHandler.java,9\1\91933257bf06828922b790a53030758c3806f3da
 O
 .github/workflows/pipeline.yaml,0\0\005148ba6c02c1d20e7c2833f08625a8ebe254cf
 ‰

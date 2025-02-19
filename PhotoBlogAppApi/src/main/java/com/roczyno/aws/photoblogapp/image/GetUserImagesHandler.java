@@ -74,16 +74,16 @@ public class GetUserImagesHandler implements RequestHandler<APIGatewayProxyReque
 				return createErrorResponse(response, 401, "Invalid authentication token");
 			}
 
-			String email = userDetails.get("email");
+			String userId = userDetails.get("userId");
 
 			// Query DynamoDB for user's images, excluding recycled images
 			QueryRequest queryRequest = QueryRequest.builder()
 					.tableName(imagesTable)
 					.indexName("UserImagesIndex")
-					.keyConditionExpression("email = :email")
+					.keyConditionExpression("userId = :userId")
 					.filterExpression("attribute_not_exists(isDeleted) OR isDeleted = :false")
 					.expressionAttributeValues(Map.of(
-							":email", AttributeValue.builder().s(email).build(),
+							":userId", AttributeValue.builder().s(userId).build(),
 							":false", AttributeValue.builder().bool(false).build()
 					))
 					.build();
