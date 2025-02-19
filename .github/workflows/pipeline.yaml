@@ -18,43 +18,7 @@ env:
   HOSTED_ZONE_ID: ${{ secrets.HOSTED_ZONE_ID }}
 
 jobs:
-  deploy-primary:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.PRIMARY_REGION }}
-      - uses: aws-actions/setup-sam@v2
-        with:
-          use-installer: true
-
-      - name: Build resources
-        run: sam build --template ${SAM_TEMPLATE} --use-container
-
-      - name: Deploy to primary region
-        run: |
-          sam deploy \
-            --stack-name photoblogapp-primary \
-            --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
-            --region ${PRIMARY_REGION} \
-            --resolve-s3 \
-            --no-fail-on-empty-changeset \
-            --no-confirm-changeset \
-            --parameter-overrides \
-              Environment=primary \
-              PrimaryRegion=${PRIMARY_REGION} \
-              SecondaryRegion=${SECONDARY_REGION} \
-              HostedZoneId=${HOSTED_ZONE_ID}
-
-      # Add a delay to ensure primary table is fully created
-      - name: Wait for primary table
-        run: sleep 30
-
   deploy-secondary:
-    needs: deploy-primary
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -99,3 +63,35 @@ jobs:
             --type String \
             --overwrite \
             --region ${PRIMARY_REGION}
+
+  deploy-primary:
+    needs: deploy-secondary
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.PRIMARY_REGION }}
+      - uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - name: Build resources
+        run: sam build --template ${SAM_TEMPLATE} --use-container
+
+      - name: Deploy to primary region
+        run: |
+          sam deploy \
+            --stack-name photoblogapp-primary \
+            --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+            --region ${PRIMARY_REGION} \
+            --resolve-s3 \
+            --no-fail-on-empty-changeset \
+            --no-confirm-changeset \
+            --parameter-overrides \
+              Environment=primary \
+              PrimaryRegion=${PRIMARY_REGION} \
+              SecondaryRegion=${SECONDARY_REGION} \
+              HostedZoneId=${HOSTED_ZONE_ID}
