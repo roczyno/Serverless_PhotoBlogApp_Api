@@ -452,7 +452,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: PhotoBlogAppApi
-      Handler: com.roczyno.aws.photoblogapp.image.GetAllRecycledImagesHandler::handleRequest
+      Handler: com.roczyno.aws.photoblogapp.image.GetAllUserRecycledImagesHandler::handleRequest
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref ImagesTable
