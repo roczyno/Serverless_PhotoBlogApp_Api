@@ -45,9 +45,10 @@ public class LoginUserHandler implements RequestHandler<APIGatewayProxyRequestEv
 		this.appClientId = System.getenv("PB_COGNITO_POOL_CLIENT_ID");
 		this.appClientSecret = System.getenv("PB_COGNITO_POOL_SECRET_ID");
 		this.cognitoUserService = new CognitoUserService(primaryCognitoClient,secondaryCognitoClient,
-				new NotificationService(AwsConfig.snsClient()),"5mqq5bsebbn7v689p25uv5uj2q",
-				"1jc35tu45vhvmkgb5ou5k6rtm7ah4tjonp2ncv2hk0r40aqflqcp","7p669rvvrg45m211crqf3dhkmu",
-				"4gs6f558471lrm31ipgjlmum4ooef1g33ml6gl75inj73q9ed1v","eu-west-1_KkSbd6kX8","eu-central-1_HaIIjUvcL");
+				new NotificationService(AwsConfig.snsClient()),"49a1nhp2caq4nkeesjkp38kkdl",
+				"ibce9nu63g8manjh9bfbg3sbb8cd4jlnio5mtct4f13pdk4tkh9","tojb5974i1gt0f8c1f4m238e8",
+				"rb4l8mv44l447i0g5fk45qjmh0drpug1lpggjnl8hraoupandd8",
+				"eu-west-1_NRAUgAWPV","eu-central-1_XhuniWl0T");
 	}
 
 	@Override
