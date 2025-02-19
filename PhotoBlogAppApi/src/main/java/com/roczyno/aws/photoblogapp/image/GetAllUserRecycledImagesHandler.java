@@ -19,6 +19,12 @@ import java.util.stream.Collectors;
 public class GetAllUserRecycledImagesHandler implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
 	private final DynamoDbClient dynamoDbClient;
 	private final String imagesTable;
+	private static final Map<String, String> CORS_HEADERS = Map.of(
+			"Access-Control-Allow-Origin", "http://localhost:5173",
+			"Access-Control-Allow-Headers", "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Requested-With",
+			"Access-Control-Allow-Methods", "GET,POST,OPTIONS",
+			"Access-Control-Max-Age", "3600"
+	);
 
 	public GetAllUserRecycledImagesHandler() {
 		this.dynamoDbClient = DynamoDbClient.builder().build();
@@ -31,21 +37,16 @@ public class GetAllUserRecycledImagesHandler implements RequestHandler<APIGatewa
 		if ("OPTIONS".equals(input.getHttpMethod())) {
 			return new APIGatewayProxyResponseEvent()
 					.withStatusCode(200)
-					.withHeaders(Map.of(
-							"Access-Control-Allow-Origin", "http://localhost:5173",
-							"Access-Control-Allow-Headers", "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Requested-With",
-							"Access-Control-Allow-Methods", "POST,OPTIONS",
-							"Access-Control-Max-Age", "3600"
-					));
+					.withHeaders(CORS_HEADERS);
 		}
 
 		try {
-			logger.log("Extracting user email from authentication token");
-			String email = extractUserId(input);
-			logger.log("Retrieved user email: " + email);
+			logger.log("Extracting userId from authentication token");
+			String userId = extractUserId(input);
+			logger.log("Retrieved userId: " + userId);
 
 			logger.log("Querying recycled images for user");
-			List<Map<String, AttributeValue>> recycledImages = findRecycledImages(email, logger);
+			List<Map<String, AttributeValue>> recycledImages = findRecycledImages(userId, logger);
 			logger.log("Found " + recycledImages.size() + " recycled images");
 
 			List<RecycledImage> formattedImages = recycledImages.stream()
@@ -63,14 +64,14 @@ public class GetAllUserRecycledImagesHandler implements RequestHandler<APIGatewa
 		}
 	}
 
-	private List<Map<String, AttributeValue>> findRecycledImages(String email, LambdaLogger logger) {
-		logger.log("Scanning images table for recycled images of user: " + email);
+	private List<Map<String, AttributeValue>> findRecycledImages(String userId, LambdaLogger logger) {
+		logger.log("Scanning images table for recycled images of user: " + userId);
 		ScanRequest scanRequest = ScanRequest.builder()
 				.tableName(imagesTable)
 				.filterExpression("isDeleted = :deletedFlag AND userId = :userId")
 				.expressionAttributeValues(Map.of(
 						":deletedFlag", AttributeValue.builder().bool(true).build(),
-						":email", AttributeValue.builder().s(email).build()
+						":userId", AttributeValue.builder().s(userId).build()
 				))
 				.build();
 
@@ -81,7 +82,7 @@ public class GetAllUserRecycledImagesHandler implements RequestHandler<APIGatewa
 	private String extractUserId(APIGatewayProxyRequestEvent input) {
 		String token = input.getHeaders().get("Authorization").replace("Bearer ", "");
 		Map<String, String> userDetails = TokenUtils.extractUserDetails(token);
-		return userDetails.get("email");
+		return userDetails.get("userId");
 	}
 
 	private RecycledImage convertToRecycledImage(Map<String, AttributeValue> item) {
@@ -94,32 +95,30 @@ public class GetAllUserRecycledImagesHandler implements RequestHandler<APIGatewa
 	}
 
 	private APIGatewayProxyResponseEvent createSuccessResponse(List<RecycledImage> images) {
-		APIGatewayProxyResponseEvent response = new APIGatewayProxyResponseEvent();
-		response.setStatusCode(200);
-		response.setBody(new Gson().toJson(images));
-		return response;
+		return new APIGatewayProxyResponseEvent()
+				.withStatusCode(200)
+				.withHeaders(CORS_HEADERS)
+				.withBody(new Gson().toJson(images));
 	}
 
 	private APIGatewayProxyResponseEvent createErrorResponse(Exception e) {
-
-		APIGatewayProxyResponseEvent response = new APIGatewayProxyResponseEvent();
-		response.setStatusCode(500);
-		response.setBody("Error: " + e.getMessage());
-		return response;
+		return new APIGatewayProxyResponseEvent()
+				.withStatusCode(500)
+				.withHeaders(CORS_HEADERS)
+				.withBody("Error: " + e.getMessage());
 	}
 
-	// Inner class to represent recycled image
 	private static class RecycledImage {
 		private String imageId;
 		private String recycledImageUrl;
 		private String userId;
 		private String email;
 
-		public RecycledImage(String imageId, String recycledImageUrl, String userId,String email) {
+		public RecycledImage(String imageId, String recycledImageUrl, String userId, String email) {
 			this.imageId = imageId;
 			this.recycledImageUrl = recycledImageUrl;
 			this.userId = userId;
-			this.email=email;
+			this.email = email;
 		}
 	}
 }
