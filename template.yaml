@@ -176,14 +176,14 @@ Resources:
                 - cognito-idp:ConfirmSignUp
                 - cognito-idp:AdminCreateUser
                 - cognito-idp:AdminConfirmSignUp
-              Resource: "arn:aws:cognito-idp:eu-west-1:343218181928:userpool/eu-west-1_NRAUgAWPV"
+              Resource: "arn:aws:cognito-idp:eu-west-1:343218181928:userpool/eu-west-1_fuLTuM9q2"
             - Effect: Allow
               Action:
                 - cognito-idp:SignUp
                 - cognito-idp:ConfirmSignUp
                 - cognito-idp:AdminCreateUser
                 - cognito-idp:AdminConfirmSignUp
-              Resource: "arn:aws:cognito-idp:eu-central-1:343218181928:userpool/eu-central-1_XhuniWl0T"
+              Resource: "arn:aws:cognito-idp:eu-central-1:343218181928:userpool/eu-central-1_0yacNp5GZ"
             - Effect: Allow
               Action:
                 - sns:Subscribe
