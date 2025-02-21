@@ -69,7 +69,7 @@ public class GetAllImagesHandler implements RequestHandler<APIGatewayProxyReques
 			response.setBody(jsonBody);
 			response.setHeaders(Map.of(
 					"Content-Type", "application/json",
-					"Access-Control-Allow-Origin", "*"
+					"Access-Control-Allow-Origin", "https://main.d2enft4pt2m4ub.amplifyapp.com,http://localhost:5173"
 			));
 
 		} catch (Exception e) {

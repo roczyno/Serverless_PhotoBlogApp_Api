@@ -129,9 +129,22 @@ Resources:
         AddDefaultAuthorizerToCorsPreflight: false
       Cors:
         AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
-        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Requested-With'"
-        AllowOrigin: "'*'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Requested-With,Access-Control-Allow-Origin'"
+        AllowOrigin: "'https://main.d2enft4pt2m4ub.amplifyapp.com,http://localhost:5173'"
         MaxAge: "'3600'"
+      GatewayResponses:
+        DEFAULT_4XX:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: "'https://main.d2enft4pt2m4ub.amplifyapp.com,http://localhost:5173'"
+              Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+              Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Requested-With,Access-Control-Allow-Origin'"
+        DEFAULT_5XX:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: "'https://main.d2enft4pt2m4ub.amplifyapp.com,http://localhost:5173'"
+              Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+              Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Requested-With,Access-Control-Allow-Origin'"
 
   LoginUserHandlerFunction:
     Type: AWS::Serverless::Function

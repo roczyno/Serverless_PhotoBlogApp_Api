@@ -29,7 +29,7 @@ public class ShareImageHandler implements RequestHandler<APIGatewayProxyRequestE
 	private static final Duration EXPIRATION = Duration.ofHours(3);
 	private static final Map<String, String> CORS_HEADERS = Map.of(
 			"Content-Type", "application/json",
-			"Access-Control-Allow-Origin", "*",
+			"Access-Control-Allow-Origin", "https://main.d2enft4pt2m4ub.amplifyapp.com,http://localhost:5173",
 			"Access-Control-Allow-Methods", "GET",
 			"Access-Control-Allow-Headers", "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token"
 	);
