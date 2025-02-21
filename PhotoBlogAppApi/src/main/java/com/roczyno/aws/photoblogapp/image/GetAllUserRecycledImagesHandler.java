@@ -20,7 +20,7 @@ public class GetAllUserRecycledImagesHandler implements RequestHandler<APIGatewa
 	private final DynamoDbClient dynamoDbClient;
 	private final String imagesTable;
 	private static final Map<String, String> CORS_HEADERS = Map.of(
-			"Access-Control-Allow-Origin", "http://localhost:5173",
+			"Access-Control-Allow-Origin", "*",
 			"Access-Control-Allow-Headers", "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Requested-With",
 			"Access-Control-Allow-Methods", "GET,POST,OPTIONS",
 			"Access-Control-Max-Age", "3600"

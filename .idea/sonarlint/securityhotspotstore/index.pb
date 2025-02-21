@@ -45,3 +45,5 @@ YPhotoBlogAppApi/src/main/java/com/roczyno/aws/photoblogapp/health/HealthCheckHa
 RPhotoBlogAppApi/src/main/java/com/roczyno/aws/photoblogapp/dr/FailoverHandler.java,e\6\e6f137b51a2e740babc472da036525dfe473f77f
 •
 ePhotoBlogAppApi/src/main/java/com/roczyno/aws/photoblogapp/image/GetAllUserRecycledImagesHandler.java,7\3\7373037f570be28127eca576543c40e34e4a6334
+L
+.aws-sam/build/template.yaml,f\0\f042ca25dc34af9ba9d363e064cd4e6c8f188d77
