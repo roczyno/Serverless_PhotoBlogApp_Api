@@ -188,31 +188,24 @@ public class CognitoUserService {
 		String email = loginDetails.get("email").getAsString();
 		String password = loginDetails.get("password").getAsString();
 
-		try {
-			// Try primary region first
-			return authenticateUser(
-					email,
-					password,
-					primaryClientId,
-					primaryClientSecret,
-					primaryCognitoClient,
-					snsTopicArn,
-					false
-			);
-		} catch (Exception e) {
-			log.warn("Primary region authentication failed, trying secondary region", e);
+		// Use the Environment parameter from SAM template
+		String environment = System.getenv("Environment"); // Make sure this is passed to Lambda
+		boolean isSecondaryRegion = "secondary".equals(environment);
 
-			// Try secondary region if primary fails
-			return authenticateUser(
-					email,
-					password,
-					secondaryClientId,
-					secondaryClientSecret,
-					secondaryCognitoClient,
-					snsTopicArn,
-					true
-			);
-		}
+		// Use the appropriate Cognito client and credentials based on environment
+		String clientId = isSecondaryRegion ? secondaryClientId : primaryClientId;
+		String clientSecret = isSecondaryRegion ? secondaryClientSecret : primaryClientSecret;
+		CognitoIdentityProviderClient cognitoClient = isSecondaryRegion ? secondaryCognitoClient : primaryCognitoClient;
+
+		return authenticateUser(
+				email,
+				password,
+				clientId,
+				clientSecret,
+				cognitoClient,
+				snsTopicArn,
+				isSecondaryRegion
+		);
 	}
 
 	private JsonObject authenticateUser(

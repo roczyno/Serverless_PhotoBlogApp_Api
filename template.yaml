@@ -151,6 +151,9 @@ Resources:
     Properties:
       CodeUri: PhotoBlogAppApi
       Handler: com.roczyno.aws.photoblogapp.auth.LoginUserHandler::handleRequest
+      Environment:
+        Variables:
+          Environment: !Ref Environment
       Policies:
         - Version: "2012-10-17"
           Statement:
