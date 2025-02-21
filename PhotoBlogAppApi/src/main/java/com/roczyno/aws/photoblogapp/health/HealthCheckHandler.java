@@ -14,7 +14,7 @@ public class HealthCheckHandler implements RequestHandler<APIGatewayProxyRequest
 	public APIGatewayProxyResponseEvent handleRequest(APIGatewayProxyRequestEvent request, Context context) {
 		Map<String, String> headers = new HashMap<>();
 		headers.put("Content-Type", "application/json");
-		headers.put("Access-Control-Allow-Origin", "https://main.d2enft4pt2m4ub.amplifyapp.com,http://localhost:5173");
+		headers.put("Access-Control-Allow-Origin", "*");
 
 		// Simple health check response
 		String responseBody = "{\"status\":\"healthy\",\"region\":\"" + System.getenv("AWS_REGION") + "\"}";

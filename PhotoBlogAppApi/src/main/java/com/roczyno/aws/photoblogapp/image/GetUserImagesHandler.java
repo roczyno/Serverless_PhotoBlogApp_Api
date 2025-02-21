@@ -26,7 +26,7 @@ public class GetUserImagesHandler implements RequestHandler<APIGatewayProxyReque
 	private final String imagesTable;
 	private static final Map<String, String> CORS_HEADERS = Map.of(
 			"Content-Type", "application/json",
-			"Access-Control-Allow-Origin", "https://main.d2enft4pt2m4ub.amplifyapp.com,http://localhost:5173",
+			"Access-Control-Allow-Origin", "*",
 			"Access-Control-Allow-Methods", "POST",
 			"Access-Control-Allow-Headers", "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token"
 	);
@@ -111,7 +111,7 @@ public class GetUserImagesHandler implements RequestHandler<APIGatewayProxyReque
 			response.setBody(jsonBody);
 			response.setHeaders(Map.of(
 					"Content-Type", "application/json",
-					"Access-Control-Allow-Origin", "https://main.d2enft4pt2m4ub.amplifyapp.com,http://localhost:5173"
+					"Access-Control-Allow-Origin", "*"
 			));
 
 		} catch (Exception e) {
