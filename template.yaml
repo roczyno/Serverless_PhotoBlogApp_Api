@@ -559,8 +559,20 @@ Resources:
       BucketName: !Sub "photoblogapp-primary-bucket-${AWS::Region}"
       VersioningConfiguration:
         Status: Enabled
-
-
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders: [ '*' ]
+            AllowedMethods: [ GET, PUT, POST, DELETE ]
+            AllowedOrigins: [ '*' ]
+            MaxAge: 3000
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: ObjectWriter
 
   SecondaryBucketPolicy:
     Type: AWS::S3::BucketPolicy
@@ -570,13 +582,18 @@ Resources:
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
+          - Sid: PublicReadGetObject
+            Effect: Allow
+            Principal: "*"
+            Action: "s3:GetObject"
+            Resource: !Sub "arn:aws:s3:::${SecondaryBucket}/*"
           - Sid: AllowReplication
             Effect: Allow
             Principal:
               AWS: !If
-                - IsReplicationRoleNeeded  # ✅ Check if the role exists (either in primary or secondary)
+                - IsReplicationRoleNeeded
                 - !Sub "arn:aws:iam::${AWS::AccountId}:role/photoblogapp-S3ReplicationRole-${AWS::Region}"
-                - !Ref AWS::NoValue  # ✅ Remove principal if role is not created
+                - !Ref AWS::NoValue
             Action:
               - s3:ReplicateObject
               - s3:ReplicateDelete
@@ -585,7 +602,7 @@ Resources:
               - s3:ObjectOwnerOverrideToBucketOwner
             Resource: !Sub "arn:aws:s3:::${SecondaryBucket}/*"
     DependsOn:
-      - S3ReplicationRole  # ✅ Ensures IAM Role is created before Policy
+      - S3ReplicationRole
 
 
 
