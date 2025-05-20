@@ -2,7 +2,7 @@
 
 A serverless photo blog application built with AWS services that allows users to upload, share, and manage images with a recycle bin feature. The application is designed with multi-region deployment capabilities for high availability and disaster recovery.
 
-![PhotoBlogApp Architecture](https://via.placeholder.com/800x400?text=PhotoBlogApp+Architecture)
+![PhotoBlogApp Architecture](./photoblogapp.drawio.png)
 
 ## Overview
 
